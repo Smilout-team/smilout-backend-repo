@@ -1,0 +1,4 @@
+{
+  "pattern": "^((main|dev|release)|(feat|fix|hotfix|chore|refactor|docs)\/SMILOUT-[0-9]+-[a-zA-Z0-9-]+)$",
+  "errorMsg": "Your branch is invalid format! Correct format: feat/SMILOUT-123-add-login-page hoặc fix/SMILOUT-456-fix-bug"
+}
