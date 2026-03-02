@@ -26,6 +26,7 @@ const userRepository = {
       data: {
         name: data.name,
         email: data.email,
+        phoneNumber: data.phoneNumber,
         passwordHash: data.passwordHash,
       },
     });
