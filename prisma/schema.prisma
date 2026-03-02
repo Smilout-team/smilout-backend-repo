@@ -1,0 +1,323 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+enum TransactionType {
+  DEPOSIT
+  PURCHASE
+  REFUND
+  SUBSCRIPTION_PAYMENT
+}
+
+enum OrderType {
+  DELIVERY
+  INSTORE
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PREPARING
+}
+
+enum UserRole {
+  CONSUMER
+  STORE_STAFF
+  STORE_OWNER
+  SYSTEM_ADMIN
+}
+
+enum SubscriptionPlanName {
+  STANDARD
+  PLUS
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum FraudAlertStatus {
+  PENDING
+  RESOLVED
+  CANCELLED
+}
+
+enum SocialProvider {
+  GOOGLE
+}
+
+// Models
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  name            String    @db.VarChar(100)
+  email           String    @unique @db.VarChar(100)
+  phoneNumber    String?   @map("phone_number") @db.VarChar(15)
+  avatarUrl      String?   @map("avatar_url") @db.VarChar(255)
+  address         String?   @db.VarChar(255)
+  coordinate      String?   @db.Text // GEOGRAPHY type
+  passwordHash   String?    @map("password_hash") @db.Text
+  socialProvider SocialProvider? @map("social_provider")
+  socialId       String?   @map("social_id") @db.VarChar(255)
+  roles           UserRole[]
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  wallets              Wallet[]
+  refreshTokens       RefreshToken[]
+  orders               Order[]
+  ownedStores         Store[]               @relation("StoreOwner")
+  notifications        Notification[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  balance      Decimal   @db.Decimal(15, 2) @default(0)
+  currency     String?   @db.VarChar(10)
+  createdAt   DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  user         User                @relation(fields: [userId], references: [id])
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id              String          @id @default(uuid()) @db.Uuid
+  walletId       String          @map("wallet_id") @db.Uuid
+  transactionType TransactionType
+  amount          Decimal         @db.Decimal(15, 2)
+  referenceId    String          @db.VarChar(255)
+  createdAt      DateTime        @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime        @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt      DateTime?       @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  wallet Wallet @relation(fields: [walletId], references: [id])
+  @@map("wallet_transactions")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  tokenHash        String    @db.Text @map("token_hash")
+  userId      String    @map("user_id") @db.Uuid
+  ipAddress   String    @map("ip_address") @db.VarChar(45)
+  userAgent   String    @map("user_agent") @db.Text
+  expiryDate  DateTime  @map("expiry_date") @db.Timestamp(6)
+  createdAt   DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  @@map("refresh_tokens")
+}
+
+model Device {
+  id           String    @id @default(uuid()) @db.Uuid
+  storeId     String    @map("store_id") @db.Uuid
+  name         String    @db.VarChar(255)
+  deviceIp    String    @map("device_ip") @db.VarChar(45)
+  status       Boolean   @default(false)
+  rtspUrl     String    @map("rtsp_url") @db.Text
+  createdAt   DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  store Store @relation(fields: [storeId], references: [id])
+
+  @@map("devices")
+}
+
+model Store {
+  id                    String        @id @default(uuid()) @db.Uuid
+  storeOwnerId        String        @map("store_owner_id") @db.Uuid
+  storeName            String        @map("store_name") @db.VarChar(255)
+  contactEmail         String        @map("contact_email") @db.VarChar(48)
+  contactPhone         String        @map("contact_phone") @db.VarChar(15)
+  avatarKey            String        @map("avatar_key") @db.VarChar(255)
+  address               String        @map("address") @db.VarChar(255)
+  coordinate            String?       @map("coordinate") @db.Text
+  description           String        @map("description") @db.Text
+  storeHours           Json          @map("store_hours") @db.Json
+  createdAt            DateTime      @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime      @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt            DateTime?     @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  storeOwner           User                @relation("StoreOwner", fields: [storeOwnerId], references: [id])
+  devices               Device[]
+  products              Product[]
+  orders                Order[]
+  storeSubscriptions   StoreSubscription[]
+  fraudAlerts          FraudAlert[]
+
+  @@map("stores")
+}
+
+model Product {
+  id                   String    @id @default(uuid()) @db.Uuid
+  storeId             String    @map("store_id") @db.Uuid
+  name                 String    @db.VarChar(255)
+  description          String    @db.Text
+  originalPrice       Decimal   @map("original_price") @db.Decimal(10, 2)
+  discountingPrice    Decimal   @map("discounting_price") @db.Decimal(10, 2)
+  discountingPercentage Decimal @map("discounting_percentage") @db.Decimal(5, 2)
+  manufacturingDate   DateTime  @map("manufacturing_date") @db.Date
+  expiryDate          DateTime? @map("expiry_date") @db.Date
+  stockQuantity       Int       @map("stock_quantity") @db.Integer
+  barcode              String    @db.VarChar(50)
+  categoryId          String    @map("category_id") @db.Uuid
+  imageUrls           Json      @map("image_urls") @db.Json
+  isAvailable         Boolean   @map("is_available") @default(true)
+  createdAt           DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt           DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  store        Store       @relation(fields: [storeId], references: [id])
+  category     Category    @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+
+  @@map("products")
+}
+
+model Category {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String?   @db.VarChar(255)
+  description String    @db.Text
+  createdAt  DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  products Product[]
+
+  @@map("categories")
+}
+
+model Order {
+  id           String      @id @default(uuid()) @db.Uuid
+  consumerId  String      @map("consumer_id") @db.Uuid
+  storeId     String      @map("store_id") @db.Uuid
+  orderType   OrderType   @map("order_type")
+  status       OrderStatus @default(PENDING)
+  totalAmount Decimal     @map("total_amount") @db.Decimal(11, 2)
+  createdAt   DateTime    @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime    @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt   DateTime?   @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  consumer    User        @relation(fields: [consumerId], references: [id])
+  store       Store       @relation(fields: [storeId], references: [id])
+  orderItems  OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String    @id @default(uuid()) @db.Uuid
+  orderId            String    @map("order_id") @db.Uuid
+  productId          String    @map("product_id") @db.Uuid
+  quantity            Int       @db.Integer
+  priceAtPurchase   Decimal   @map("price_at_purchase") @db.Decimal(10, 2)
+  createdAt          DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model SubscriptionPlan {
+  id            String                 @id @default(uuid()) @db.Uuid
+  name          SubscriptionPlanName
+  price         Decimal                @db.Decimal(10, 2)
+  durationDays Int                    @map("duration_days") @db.Integer
+  features      Json?                  @db.Json
+  createdAt    DateTime               @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime               @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt    DateTime?              @map("deleted_at") @db.Timestamp(6)
+  // Relations
+  storeSubscriptions StoreSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model StoreSubscription {
+  id        String             @id @default(uuid()) @db.Uuid
+  storeId  String             @map("store_id") @db.Uuid
+  planId   String             @map("plan_id") @db.Uuid
+  startDay DateTime           @map("start_day") @db.Timestamp(6)
+  endDay   DateTime           @map("end_day") @db.Timestamp(6)
+  status    SubscriptionStatus @default(ACTIVE)
+  createdAt DateTime          @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt DateTime          @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt DateTime?         @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  store Store            @relation(fields: [storeId], references: [id])
+  plan  SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@map("store_subscriptions")
+}
+
+model FraudAlert {
+  id               String           @id @default(uuid()) @db.Uuid
+  storeId         String           @map("store_id") @db.Uuid
+  orderId         String           @map("order_id") @db.Uuid
+  detectedAt      DateTime         @map("detected_at") @db.Timestamp(6)
+  evidenceUrlKey String?          @map("evidence_url_key") @db.Text
+  confidenceScore String?          @map("confidence_score") @db.Text
+  status           FraudAlertStatus @default(PENDING)
+  createdAt       DateTime         @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime         @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt       DateTime?        @map("deleted_at") @db.Timestamp(6)
+  // Relations
+  store Store @relation(fields: [storeId], references: [id])
+
+  @@map("fraud_alerts")
+}
+
+model Notification {
+  id              String    @id @default(uuid()) @db.Uuid
+  receiverId     String    @map("receiver_id") @db.Uuid
+  title           String    @db.VarChar(255)
+  body            String?   @db.Text
+  isRead         Boolean   @map("is_read") @default(false)
+  targetDetails  String?   @map("target_details") @db.Text
+  referenceId    String    @map("reference_id") @db.Uuid
+  createdAt      DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  receiver User @relation(fields: [receiverId], references: [id])
+
+  @@map("notifications")
+}
