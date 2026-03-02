@@ -66,12 +66,12 @@ const authService = {
     const user = await userRepository.findByEmail(email);
 
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedError(AUTH_MESSAGES.INVALID_EMAIL_OR_PASSWORD);
+      throw new BadRequestError(AUTH_MESSAGES.INVALID_EMAIL_OR_PASSWORD);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new UnauthorizedError(AUTH_MESSAGES.INVALID_EMAIL_OR_PASSWORD);
+      throw new BadRequestError(AUTH_MESSAGES.INVALID_EMAIL_OR_PASSWORD);
     }
 
     const { accessToken, refreshToken } = await generateAndStoreTokens(
@@ -106,7 +106,7 @@ const authService = {
   getProfile: async (userId: string) => {
     const user = await userRepository.findById(userId);
     if (!user) {
-      throw new UnauthorizedError('User not found');
+      throw new BadRequestError('User not found');
     }
     const { passwordHash, ...userWithoutPassword } = user;
     return userWithoutPassword;
