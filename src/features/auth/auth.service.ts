@@ -35,6 +35,14 @@ const authService = {
   signUpWithEmail: async (data: AuthRequestDto) => {
     const existingUser = await userRepository.findByEmail(data.email);
 
+    const existingPhoneNumberUser = await userRepository.findByPhoneNumber(
+      data.phoneNumber
+    );
+
+    if (existingPhoneNumberUser) {
+      throw new BadRequestError(AUTH_MESSAGES.PHONE_NUMBER_ALREADY_EXISTS);
+    }
+
     if (existingUser) {
       throw new BadRequestError(AUTH_MESSAGES.EMAIL_ALREADY_EXISTS);
     }
@@ -45,6 +53,7 @@ const authService = {
     const user = await userRepository.create({
       name: data.name!,
       email: data.email,
+      phoneNumber: data.phoneNumber,
       passwordHash: hashedPassword,
     });
 
