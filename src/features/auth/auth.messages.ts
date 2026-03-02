@@ -13,4 +13,5 @@ export const AUTH_MESSAGES = {
     'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại',
   USER_PROFILE_RETRIEVED_SUCCESSFULLY:
     'Lấy thông tin hồ sơ người dùng thành công',
+  PHONE_NUMBER_ALREADY_EXISTS: 'Số điện thoại đã tồn tại',
 } as const;
