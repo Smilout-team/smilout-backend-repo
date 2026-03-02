@@ -95,6 +95,7 @@
  *                 email: "john.doe@example.com"
  *                 password: "SecurePass123!"
  *                 passwordConfirmation: "SecurePass123!"
+ *                 phoneNumber: "+1234567890"
  *     responses:
  *       201:
  *         description: User registered successfully. Returns basic user information (id, email, name).
@@ -109,6 +110,7 @@
  *                 id: "84d3f367-1549-407f-8b31-8d3612dd6d01"
  *                 email: "john.doe@example.com"
  *                 name: "John Doe"
+ *                 phoneNumber: "+1234567890"
  *       400:
  *         description: Email already exists or invalid data
  *         content:

@@ -15,6 +15,12 @@ const userRepository = {
     return await prisma.user.findUnique({ where: { id, deletedAt: null } });
   },
 
+  findByPhoneNumber: async (phoneNumber: string) => {
+    return await prisma.user.findFirst({
+      where: { phoneNumber, deletedAt: null },
+    });
+  },
+
   create: async (data: CreateUserParams) => {
     return await prisma.user.create({
       data: {
