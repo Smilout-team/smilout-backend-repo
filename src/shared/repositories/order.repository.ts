@@ -144,6 +144,56 @@ const orderRepository = {
       },
     });
   },
+
+  createCheckoutTransaction: async (data: {
+    userId: string;
+    storeId: string;
+    totalAmount: number;
+    items: { productId: string; quantity: number; priceAtPurchase: number }[];
+  }) => {
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Bước 1: Trừ tiền ví (Dùng updateMany vì cột userId trong Wallet không phải là @unique)
+      await tx.wallet.updateMany({
+        where: { userId: data.userId },
+        data: {
+          balance: { decrement: data.totalAmount },
+        },
+      });
+
+      // Bước 2: Trừ tồn kho sản phẩm (Cột chuẩn là stockQuantity)
+      for (const item of data.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stockQuantity: { decrement: item.quantity },
+          },
+        });
+      }
+
+      // Bước 3: Tạo đơn hàng
+      const newOrder = await tx.order.create({
+        data: {
+          consumerId: data.userId, // Cột chuẩn là consumerId
+          storeId: data.storeId,
+          orderType: 'INSTORE', // Bắt buộc phải có theo schema
+          totalAmount: data.totalAmount,
+          status: 'PAID',
+
+          orderItems: {
+            create: data.items.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              priceAtPurchase: item.priceAtPurchase, // Phải có giá lúc mua
+            })),
+          },
+        },
+      });
+
+      return newOrder;
+    });
+  },
 };
+
+export default orderRepository;
 
 export default orderRepository;
