@@ -16,8 +16,8 @@ The backend project for the self-checkout system, is built with Expressjs and Ty
 
 1. **Clone project:**
    ```
-   git clone https://github.com/TaiVo1905/pnbook-be-repo.git
-   cd pnbook-be-repo
+   git clone https://github.com/TaiVo1905/smilout-backend-repo.git
+   cd smilout-backend-repo
    ```
 2. **Install dependencies**
 

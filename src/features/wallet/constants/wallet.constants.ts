@@ -1,0 +1,1 @@
+export const TOP_UP_EXPIRES_IN_MINUTES = 30;
