@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { validate } from '@/middlewares/validate.middleware.js';
 import { authMiddleware } from '@/middlewares/auth.middleware.js';
 import { scanStoreSchema } from './schemas/scanStore.schema.js';
+import { storeDetailSchema } from './schemas/storeDetail.schema.js';
 import { storeScanController } from './store.controller.js';
 const storeScanRoutes = Router();
 
@@ -10,6 +11,13 @@ storeScanRoutes.post(
   authMiddleware,
   validate(scanStoreSchema),
   storeScanController.scanStore
+);
+
+storeScanRoutes.get(
+  '/:storeId',
+  authMiddleware,
+  validate(storeDetailSchema),
+  storeScanController.getStoreDetail
 );
 
 export default storeScanRoutes;
