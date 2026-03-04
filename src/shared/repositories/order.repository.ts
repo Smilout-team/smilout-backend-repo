@@ -34,7 +34,7 @@ const orderRepository = {
   findActiveCart(userId: string) {
     return prisma.order.findFirst({
       where: {
-        userId,
+        consumerId,
         status: 'PENDING',
       },
     });
@@ -43,7 +43,7 @@ const orderRepository = {
   createCart(userId: string, storeId: string) {
     return prisma.order.create({
       data: {
-        userId,
+        consumerId,
         storeId,
         orderType: 'INSTORE',
         status: 'PENDING',
