@@ -1,5 +1,6 @@
 import { prisma } from '@/utils/prisma.js';
 import { Prisma, type OrderItem } from '../../../generated/prisma/index.js';
+import { BadRequestError } from '@/core/apiError.js';
 
 const orderRepository = {
   findProductByBarcode(barcode: string, storeId: string) {
@@ -145,37 +146,45 @@ const orderRepository = {
     });
   },
 
-  createCheckoutTransaction: async (data: {
+  createPaymentTransaction: async (data: {
     userId: string;
     storeId: string;
     totalAmount: number;
     items: { productId: string; quantity: number; priceAtPurchase: number }[];
   }) => {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Bước 1: Trừ tiền ví (Dùng updateMany vì cột userId trong Wallet không phải là @unique)
-      await tx.wallet.updateMany({
+      const wallet = await tx.wallet.findFirst({
         where: { userId: data.userId },
+      });
+
+      if (!wallet) {
+        throw new BadRequestError('Ví người dùng không tồn tại.');
+      }
+
+      await tx.wallet.update({
+        where: { id: wallet.id },
         data: {
           balance: { decrement: data.totalAmount },
         },
       });
 
-      // Bước 2: Trừ tồn kho sản phẩm (Cột chuẩn là stockQuantity)
       for (const item of data.items) {
         await tx.product.update({
-          where: { id: item.productId },
+          where: {
+            id: item.productId,
+            stockQuantity: { gte: item.quantity },
+          },
           data: {
             stockQuantity: { decrement: item.quantity },
           },
         });
       }
 
-      // Bước 3: Tạo đơn hàng
       const newOrder = await tx.order.create({
         data: {
-          consumerId: data.userId, // Cột chuẩn là consumerId
+          consumerId: data.userId,
           storeId: data.storeId,
-          orderType: 'INSTORE', // Bắt buộc phải có theo schema
+          orderType: 'INSTORE',
           totalAmount: data.totalAmount,
           status: 'PAID',
 
@@ -183,9 +192,18 @@ const orderRepository = {
             create: data.items.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
-              priceAtPurchase: item.priceAtPurchase, // Phải có giá lúc mua
+              priceAtPurchase: item.priceAtPurchase,
             })),
           },
+        },
+      });
+
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          amount: data.totalAmount,
+          transactionType: 'PURCHASE' as any,
+          referenceId: `ORDER-${newOrder.id}`,
         },
       });
 
@@ -193,7 +211,5 @@ const orderRepository = {
     });
   },
 };
-
-export default orderRepository;
 
 export default orderRepository;

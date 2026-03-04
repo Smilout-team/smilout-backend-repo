@@ -2,15 +2,15 @@ import { BadRequestError } from '@/core/apiError.js';
 import productRepository from '@/shared/repositories/product.repository.js';
 import walletRepository from '@/shared/repositories/wallet.repository.js';
 import orderRepository from '@/shared/repositories/order.repository.js';
+import { type CreatePaymentDto } from '@/shared/dtos/repositories/payment.repository.dto.js';
 
-export const checkoutService = {
-  processCheckout: async (userId: string, data: any) => {
-    const { storeId, items } = data; // Bỏ paymentMethod vì DB không có
+export const paymentService = {
+  processPayment: async (userId: string, data: CreatePaymentDto) => {
+    const { storeId, items } = data;
 
     let totalAmount = 0;
     const processedItems = [];
 
-    // 1. Tính tổng tiền và check tồn kho
     for (const item of items) {
       const product = await productRepository.findById(item.productId);
 
@@ -19,17 +19,16 @@ export const checkoutService = {
           `Sản phẩm có ID ${item.productId} không tồn tại.`
         );
       }
+
       if (product.stockQuantity < item.quantity) {
         throw new BadRequestError(
-          `Sản phẩm ${product.name} không đủ số lượng.`
+          `Sản phẩm ${product.name} hiện không đủ số lượng trong kho.`
         );
       }
 
-      // Lấy giá bán (discountingPrice) từ DB. Chuyển sang Number để tính toán
       const itemPrice = Number(product.discountingPrice);
       totalAmount += itemPrice * item.quantity;
 
-      // Lưu lại giá lúc mua để ghi vào OrderItem
       processedItems.push({
         productId: item.productId,
         quantity: item.quantity,
@@ -37,14 +36,12 @@ export const checkoutService = {
       });
     }
 
-    // 2. Kiểm tra số dư ví
     const userWallet = await walletRepository.findByUserId(userId);
     if (!userWallet || Number(userWallet.balance) < totalAmount) {
-      throw new BadRequestError('Số dư ví không đủ để thanh toán!');
+      throw new BadRequestError('Số dư ví không đủ để thực hiện thanh toán!');
     }
 
-    // 3. Thực hiện Giao dịch
-    const newOrder = await orderRepository.createCheckoutTransaction({
+    const newOrder = await orderRepository.createPaymentTransaction({
       userId,
       storeId,
       totalAmount,
@@ -55,4 +52,4 @@ export const checkoutService = {
   },
 };
 
-export default checkoutService;
+export default paymentService;
