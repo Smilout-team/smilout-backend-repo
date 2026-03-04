@@ -22,13 +22,16 @@ export class ApiResponse<T> {
     this.meta = meta;
   }
 
-  static success<T>(message: string = 'Success', data: T): ApiResponse<T> {
+  static success<T = void>(
+    message: string = 'Success',
+    data?: T
+  ): ApiResponse<T> {
     return new ApiResponse<T>(statusCodes.SUCCESS, message, data);
   }
 
-  static created<T>(
+  static created<T = void>(
     message: string = 'Created successfully',
-    data: T
+    data?: T
   ): ApiResponse<T> {
     return new ApiResponse<T>(statusCodes.CREATED, message, data);
   }
