@@ -1,7 +1,8 @@
+import type { CreateOrderParams } from '@/shared/dtos/repositories/order.repository.dto.js';
 import { prisma } from '@/utils/prisma.js';
 
-class OrderRepository {
-  async findActiveOrderByConsumer(consumerId: string) {
+const orderRepository = {
+  findActiveOrderByConsumer(consumerId: string) {
     return prisma.order.findFirst({
       where: {
         consumerId: consumerId,
@@ -9,28 +10,19 @@ class OrderRepository {
         deletedAt: null,
       },
     });
-  }
-
-  async create(data: {
-    id: string;
-    consumer_id: string;
-    store_id: string;
-    order_type: 'INSTORE' | 'DELIVERY';
-    status: 'PENDING' | 'PAID' | 'PREPARING';
-    total_amount: number;
-  }) {
+  },
+  create: (data: CreateOrderParams) => {
     return prisma.order.create({
       data: {
-        id: data.id,
-        consumerId: data.consumer_id,
-        storeId: data.store_id,
-        orderType: data.order_type,
+        consumerId: data.consumerId,
+        storeId: data.storeId,
+        orderType: data.orderType,
         status: data.status,
-        totalAmount: data.total_amount,
+        totalAmount: data.totalAmount,
         updatedAt: new Date(),
       },
     });
-  }
-}
+  },
+};
 
-export default new OrderRepository();
+export default orderRepository;
