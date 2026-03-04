@@ -21,13 +21,6 @@ enum TransactionType {
   SUBSCRIPTION_PAYMENT
 }
 
-enum TopUpStatus {
-  PENDING
-  PAID
-  FAILED
-  CANCELLED
-}
-
 enum OrderType {
   DELIVERY
   INSTORE
@@ -106,32 +99,8 @@ model Wallet {
   // Relations
   user         User                @relation(fields: [userId], references: [id])
   transactions WalletTransaction[]
-  topUpRequests WalletTopUpRequest[]
 
   @@map("wallets")
-}
-
-model WalletTopUpRequest {
-  id                 String      @id @default(uuid()) @db.Uuid
-  walletId           String      @map("wallet_id") @db.Uuid
-  invoiceNumber      String      @unique @map("invoice_number") @db.VarChar(100)
-  amount             Decimal     @db.Decimal(15, 2)
-  currency           String      @default("VND") @db.VarChar(10)
-  paymentMethod      String      @map("payment_method") @db.VarChar(50)
-  description        String?     @db.VarChar(255)
-  status             TopUpStatus @default(PENDING)
-  sepayOrderId       String?     @map("sepay_order_id") @db.VarChar(100)
-  sepayTransactionId String?     @map("sepay_transaction_id") @db.VarChar(100)
-  paidAt             DateTime?   @map("paid_at") @db.Timestamp(6)
-  rawIpn             Json?       @map("raw_ipn") @db.Json
-  createdAt          DateTime    @map("created_at") @default(now()) @db.Timestamp(6)
-  updatedAt          DateTime    @map("updated_at") @updatedAt @db.Timestamp(6)
-  deletedAt          DateTime?   @map("deleted_at") @db.Timestamp(6)
-
-  // Relations
-  wallet Wallet @relation(fields: [walletId], references: [id])
-
-  @@map("wallet_top_up_requests")
 }
 
 model WalletTransaction {
