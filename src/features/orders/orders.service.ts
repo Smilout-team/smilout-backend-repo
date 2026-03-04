@@ -8,15 +8,22 @@ import type {
 import { BadRequestError } from '@/core/apiError.js';
 
 export class OrdersService {
-  private orderRepository = new OrderRepository();
-
   async scanProduct(
     userId: string,
     payload: ScanProductRequestDto
   ): Promise<ScanProductResponseDto> {
     const { barcode } = payload;
 
-    const product = await this.orderRepository.findProductByBarcode(barcode);
+    const cart = await OrderRepository.findActiveCart(userId);
+    if (!cart) {
+      throw new BadRequestError(ORDERS_MESSAGES.NO_ACTIVE_CART);
+    }
+
+    const product = await OrderRepository.findProductByBarcode(
+      barcode,
+      cart.storeId
+    );
+
     if (!product) {
       throw new BadRequestError(ORDERS_MESSAGES.PRODUCT_NOT_FOUND);
     }
@@ -25,43 +32,35 @@ export class OrdersService {
       throw new BadRequestError(ORDERS_MESSAGES.OUT_OF_STOCK);
     }
 
-    let cart = await this.orderRepository.findActiveCart(userId);
-    if (!cart) {
-      cart = await this.orderRepository.createCart(userId, product.storeId);
-    }
-
-    const existingItem = await this.orderRepository.findOrderItem(
+    const existingItem = await OrderRepository.findOrderItem(
       cart.id,
       product.id
     );
+
     if (existingItem) {
       if (existingItem.quantity + 1 > product.stockQuantity) {
         throw new BadRequestError(ORDERS_MESSAGES.EXCEED_STOCK);
       }
 
-      await this.orderRepository.updateOrderItemQuantity(
+      await OrderRepository.updateOrderItemQuantity(
         existingItem.id,
         existingItem.quantity + 1
       );
     } else {
       const price = product.discountingPrice ?? product.originalPrice;
 
-      await this.orderRepository.createOrderItem(
-        cart.id,
-        product.id,
-        Number(price)
-      );
+      await OrderRepository.createOrderItem(cart.id, product.id, Number(price));
     }
 
-    const items = await this.orderRepository.findOrderItems(cart.id);
+    const items = await OrderRepository.findOrderItems(cart.id);
 
     const total = items.reduce((sum: Prisma.Decimal, item) => {
       return sum.plus(item.priceAtPurchase.mul(item.quantity));
     }, new Prisma.Decimal(0));
 
-    await this.orderRepository.updateOrderTotal(cart.id, total);
+    await OrderRepository.updateOrderTotal(cart.id, total);
 
-    const updatedItem = await this.orderRepository.findOrderItem(
+    const updatedItem = await OrderRepository.findOrderItem(
       cart.id,
       product.id
     );

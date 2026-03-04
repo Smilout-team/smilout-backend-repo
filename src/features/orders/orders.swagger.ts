@@ -5,7 +5,7 @@
  *     summary: Scan product and add to cart
  *     tags: [Orders]
  *     security:
- *       - bearerAuth: []
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:

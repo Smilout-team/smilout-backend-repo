@@ -25,13 +25,16 @@ const orderRepository = {
     });
   },
   
-  findProductByBarcode(barcode: string) {
+  findProductByBarcode(barcode: string, storeId: string) {
     return prisma.product.findFirst({
-      where: { barcode },
+      where: {
+        barcode,
+        storeId,
+      },
     });
   },
 
-  findActiveCart(userId: string) {
+  findActiveCart(consumerId: string) {
     return prisma.order.findFirst({
       where: {
         consumerId,
@@ -40,7 +43,7 @@ const orderRepository = {
     });
   },
 
-  createCart(userId: string, storeId: string) {
+  createCart(consumerId: string, storeId: string) {
     return prisma.order.create({
       data: {
         consumerId,
