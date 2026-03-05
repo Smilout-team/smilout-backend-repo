@@ -13,7 +13,15 @@ const storeScanService = {
     const activeCart = await orderRepository.findActiveCart(consumerId);
 
     if (activeCart) {
-      throw new BadRequestError(STORE_SCAN_MESSAGES.ACTIVE_ORDER_EXISTS);
+      if (activeCart.storeId === storeId) {
+        return {
+          orderId: activeCart.id,
+          storeId: activeCart.storeId,
+          orderType: activeCart.orderType,
+          status: activeCart.status,
+          totalAmount: Number(activeCart.totalAmount),
+        };
+      }
     }
 
     const store = await storeRepository.findById(storeId);
