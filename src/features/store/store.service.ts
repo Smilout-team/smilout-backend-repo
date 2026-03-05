@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { BadRequestError } from '@/core/apiError.js';
 import storeRepository from '@/shared/repositories/store.repository.js';
 import orderRepository from '@/shared/repositories/order.repository.js';
@@ -11,10 +10,9 @@ const storeScanService = {
     storeId: string,
     consumerId: string
   ): Promise<ScanStoreResponse> => {
-    const activeOrder =
-      await orderRepository.findActiveOrderByConsumer(consumerId);
+    const activeCart = await orderRepository.findActiveCart(consumerId);
 
-    if (activeOrder) {
+    if (activeCart) {
       throw new BadRequestError(STORE_SCAN_MESSAGES.ACTIVE_ORDER_EXISTS);
     }
 
