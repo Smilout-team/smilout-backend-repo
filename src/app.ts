@@ -32,7 +32,7 @@ app.use('/api/v1', publicRoute);
 app.use('/api/v1', protectedRoute);
 
 app.use((req, res, next) => {
-  next(new NotFoundError('Route not found'));
+  next(new NotFoundError('Route không tồn tại'));
 });
 
 app.use(errorHandler);
