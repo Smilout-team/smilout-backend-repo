@@ -1,54 +1,55 @@
 import { BadRequestError } from '@/core/apiError.js';
-import productRepository from '@/shared/repositories/product.repository.js';
-import walletRepository from '@/shared/repositories/wallet.repository.js';
 import orderRepository from '@/shared/repositories/order.repository.js';
-import { type CreatePaymentDto } from '@/shared/dtos/repositories/payment.repository.dto.js';
+import {
+  type CreatePaymentDto,
+  type ProcessPaymentResponseDto,
+} from '@/shared/dtos/repositories/payment.repository.dto.js';
+import { PAYMENT_MESSAGES } from './payment.messages.js';
 
 export const paymentService = {
-  processPayment: async (userId: string, data: CreatePaymentDto) => {
-    const { storeId, items } = data;
+  processPayment: async (
+    userId: string,
+    data: CreatePaymentDto
+  ): Promise<ProcessPaymentResponseDto> => {
+    const activeCart = await orderRepository.findActiveCart(userId);
 
-    let totalAmount = 0;
-    const processedItems = [];
-
-    for (const item of items) {
-      const product = await productRepository.findById(item.productId);
-
-      if (!product) {
-        throw new BadRequestError(
-          `Sản phẩm có ID ${item.productId} không tồn tại.`
-        );
-      }
-
-      if (product.stockQuantity < item.quantity) {
-        throw new BadRequestError(
-          `Sản phẩm ${product.name} hiện không đủ số lượng trong kho.`
-        );
-      }
-
-      const itemPrice = Number(product.discountingPrice);
-      totalAmount += itemPrice * item.quantity;
-
-      processedItems.push({
-        productId: item.productId,
-        quantity: item.quantity,
-        priceAtPurchase: itemPrice,
-      });
+    if (!activeCart) {
+      throw new BadRequestError(PAYMENT_MESSAGES.NO_ACTIVE_CART);
     }
 
-    const userWallet = await walletRepository.findByUserId(userId);
-    if (!userWallet || Number(userWallet.balance) < totalAmount) {
-      throw new BadRequestError('Số dư ví không đủ để thực hiện thanh toán!');
+    if (activeCart.id !== data.orderId) {
+      throw new BadRequestError(PAYMENT_MESSAGES.INVALID_CART_SESSION);
     }
 
-    const newOrder = await orderRepository.createPaymentTransaction({
-      userId,
-      storeId,
+    const items = await orderRepository.findOrderItems(activeCart.id);
+
+    if (items.length === 0) {
+      throw new BadRequestError(PAYMENT_MESSAGES.CART_EMPTY);
+    }
+
+    const totalAmount = items.reduce(
+      (sum, item) => sum + Number(item.priceAtPurchase) * item.quantity,
+      0
+    );
+
+    if (totalAmount <= 0) {
+      throw new BadRequestError(PAYMENT_MESSAGES.CART_EMPTY);
+    }
+
+    const paidOrder = await orderRepository.completePaymentTransaction({
+      consumerId: userId,
+      orderId: activeCart.id,
       totalAmount,
-      items: processedItems,
+      insufficientBalanceMessage: PAYMENT_MESSAGES.INSUFFICIENT_BALANCE,
+      invalidOrderMessage: PAYMENT_MESSAGES.INVALID_OR_PAID_ORDER,
     });
 
-    return newOrder;
+    return {
+      orderId: paidOrder.id,
+      storeId: paidOrder.storeId,
+      status: paidOrder.status,
+      totalAmount: Number(paidOrder.totalAmount),
+    };
   },
 };
 

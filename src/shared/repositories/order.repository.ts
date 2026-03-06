@@ -146,68 +146,67 @@ const orderRepository = {
     });
   },
 
-  createPaymentTransaction: async (data: {
-    userId: string;
-    storeId: string;
+  completePaymentTransaction: async (data: {
+    consumerId: string;
+    orderId: string;
     totalAmount: number;
-    items: { productId: string; quantity: number; priceAtPurchase: number }[];
+    insufficientBalanceMessage: string;
+    invalidOrderMessage: string;
   }) => {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const wallet = await tx.wallet.findFirst({
-        where: { userId: data.userId },
+        where: { userId: data.consumerId, deletedAt: null },
       });
 
       if (!wallet) {
         throw new BadRequestError('Ví người dùng không tồn tại.');
       }
 
-      await tx.wallet.update({
-        where: { id: wallet.id },
+      const walletUpdateResult = await tx.wallet.updateMany({
+        where: {
+          id: wallet.id,
+          balance: {
+            gte: new Prisma.Decimal(data.totalAmount),
+          },
+        },
         data: {
           balance: { decrement: data.totalAmount },
         },
       });
 
-      for (const item of data.items) {
-        await tx.product.update({
-          where: {
-            id: item.productId,
-            stockQuantity: { gte: item.quantity },
-          },
-          data: {
-            stockQuantity: { decrement: item.quantity },
-          },
-        });
+      if (walletUpdateResult.count === 0) {
+        throw new BadRequestError(data.insufficientBalanceMessage);
       }
 
-      const newOrder = await tx.order.create({
+      const updatedOrderResult = await tx.order.updateMany({
+        where: {
+          id: data.orderId,
+          consumerId: data.consumerId,
+          status: 'PENDING',
+          deletedAt: null,
+        },
         data: {
-          consumerId: data.userId,
-          storeId: data.storeId,
-          orderType: 'INSTORE',
-          totalAmount: data.totalAmount,
           status: 'PAID',
-
-          orderItems: {
-            create: data.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              priceAtPurchase: item.priceAtPurchase,
-            })),
-          },
+          totalAmount: data.totalAmount,
         },
       });
+
+      if (updatedOrderResult.count === 0) {
+        throw new BadRequestError(data.invalidOrderMessage);
+      }
 
       await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
           amount: data.totalAmount,
-          transactionType: 'PURCHASE' as any,
-          referenceId: `ORDER-${newOrder.id}`,
+          transactionType: 'PURCHASE',
+          referenceId: `ORDER-${data.orderId}`,
         },
       });
 
-      return newOrder;
+      return tx.order.findUniqueOrThrow({
+        where: { id: data.orderId },
+      });
     });
   },
 };

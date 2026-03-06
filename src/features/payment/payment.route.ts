@@ -1,9 +1,16 @@
 import { Router } from 'express';
 import { paymentController } from './payment.controller.js';
 import { authMiddleware } from '@/middlewares/auth.middleware.js';
+import { validate } from '@/middlewares/validate.middleware.js';
+import { processPaymentSchema } from './schemas/index.js';
+
 const paymentRoutes = Router();
 
-// Endpoint: POST /api/v1/payment
-paymentRoutes.post('/', authMiddleware, paymentController.processPayment);
+paymentRoutes.post(
+  '/',
+  authMiddleware,
+  validate(processPaymentSchema),
+  paymentController.processPayment
+);
 
 export default paymentRoutes;

@@ -1,9 +1,10 @@
-export interface PaymentItemDto {
-  productId: string;
-  quantity: number;
+export interface CreatePaymentDto {
+  orderId: string;
 }
 
-export interface CreatePaymentDto {
+export interface ProcessPaymentResponseDto {
+  orderId: string;
   storeId: string;
-  items: PaymentItemDto[];
+  status: 'PAID';
+  totalAmount: number;
 }

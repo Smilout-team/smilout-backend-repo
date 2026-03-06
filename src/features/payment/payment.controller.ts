@@ -3,6 +3,7 @@ import { catchAsync } from '@/utils/catchAsync.js';
 import paymentService from './payment.service.js';
 import { ApiResponse } from '@/core/apiResponse.js';
 import { statusCodes } from '@/core/statusCode.constant.js';
+import { PAYMENT_MESSAGES } from './payment.messages.js';
 
 export const paymentController = {
   processPayment: catchAsync(async (req: Request, res: Response) => {
@@ -12,7 +13,7 @@ export const paymentController = {
 
     const response = new ApiResponse(
       statusCodes.SUCCESS,
-      'Thanh toán đơn hàng thành công!',
+      PAYMENT_MESSAGES.SUCCESS,
       orderData
     );
 
