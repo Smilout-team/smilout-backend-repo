@@ -4,7 +4,7 @@ import type {
   UpdateUserParams,
 } from '@/shared/dtos/repositories/user.repository.dto.js';
 import { prisma } from '@/utils/prisma.js';
-import type { Prisma } from 'generated/prisma/index.js';
+import type { Prisma } from '../../../generated/prisma/index.js';
 
 const userRepository = {
   findByEmail: async (email: string) => {

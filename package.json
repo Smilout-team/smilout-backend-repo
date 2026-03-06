@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --watch src --exec tsx src/server.ts",
     "start": "npx prisma migrate deploy && ls -R dist && node dist/server.js",
-    "build": "npm install --include=dev && npx prisma generate && tsc && tsc-alias",
+    "build": "npm install --include=dev && npx prisma generate && tsc && tsc-alias && cp -r generated dist/",
     "prepare": "husky",
     "test": "jest",
     "typecheck": "tsc --noEmit",

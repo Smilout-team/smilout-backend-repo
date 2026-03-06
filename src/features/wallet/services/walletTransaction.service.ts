@@ -1,6 +1,9 @@
 import walletTransactionRepository from '@/shared/repositories/walletTransaction.repository.js';
 import { prisma } from '@/utils/prisma.js';
-import type { Prisma, TransactionType } from 'generated/prisma/index.js';
+import type {
+  Prisma,
+  TransactionType,
+} from '../../../../generated/prisma/index.js';
 
 export interface CreditWalletParams {
   walletId: string;

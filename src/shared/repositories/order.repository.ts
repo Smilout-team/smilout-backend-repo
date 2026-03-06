@@ -1,5 +1,5 @@
 import { prisma } from '@/utils/prisma.js';
-import { Prisma, type OrderItem } from 'generated/prisma/index.js';
+import { Prisma, type OrderItem } from '../../../generated/prisma/index.js';
 
 const orderRepository = {
   findProductByBarcode(barcode: string, storeId: string) {
@@ -66,9 +66,7 @@ const orderRepository = {
     });
   },
 
-  findOrderItems(
-    orderId: string
-  ): Promise<
+  findOrderItems(orderId: string): Promise<
     (OrderItem & {
       product?: {
         name: string;

@@ -1,4 +1,4 @@
-import { Prisma } from 'generated/prisma/index.js';
+import { Prisma } from '../../../generated/prisma/index.js';
 import orderRepository from '@/shared/repositories/order.repository.js';
 import { ORDERS_MESSAGES } from './orders.messages.js';
 import type {
