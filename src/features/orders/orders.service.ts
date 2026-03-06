@@ -38,10 +38,6 @@ export const ordersService = {
     );
 
     if (existingItem) {
-      if (existingItem.quantity + 1 > product.stockQuantity) {
-        throw new BadRequestError(ORDERS_MESSAGES.EXCEED_STOCK);
-      }
-
       await orderRepository.updateOrderItemQuantity(
         existingItem.id,
         existingItem.quantity + 1
@@ -52,7 +48,6 @@ export const ordersService = {
       await orderRepository.createOrderItem(cart.id, product.id, Number(price));
     }
 
-    // Decrease stock quantity by 1
     await orderRepository.decreaseProductStock(product.id, 1);
 
     const items = await orderRepository.findOrderItems(cart.id);
