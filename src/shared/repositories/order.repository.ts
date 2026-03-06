@@ -1,5 +1,6 @@
 import { prisma } from '@/utils/prisma.js';
 import { Prisma, type OrderItem } from '../../../generated/prisma/index.js';
+import { BadRequestError } from '@/core/apiError.js';
 
 const orderRepository = {
   findProductByBarcode(barcode: string, storeId: string) {
@@ -142,6 +143,70 @@ const orderRepository = {
           increment: quantity,
         },
       },
+    });
+  },
+
+  completePaymentTransaction: async (data: {
+    consumerId: string;
+    orderId: string;
+    totalAmount: number;
+    insufficientBalanceMessage: string;
+    invalidOrderMessage: string;
+  }) => {
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const wallet = await tx.wallet.findFirst({
+        where: { userId: data.consumerId, deletedAt: null },
+      });
+
+      if (!wallet) {
+        throw new BadRequestError('Ví người dùng không tồn tại.');
+      }
+
+      const walletUpdateResult = await tx.wallet.updateMany({
+        where: {
+          id: wallet.id,
+          balance: {
+            gte: new Prisma.Decimal(data.totalAmount),
+          },
+        },
+        data: {
+          balance: { decrement: data.totalAmount },
+        },
+      });
+
+      if (walletUpdateResult.count === 0) {
+        throw new BadRequestError(data.insufficientBalanceMessage);
+      }
+
+      const updatedOrderResult = await tx.order.updateMany({
+        where: {
+          id: data.orderId,
+          consumerId: data.consumerId,
+          status: 'PENDING',
+          deletedAt: null,
+        },
+        data: {
+          status: 'PAID',
+          totalAmount: data.totalAmount,
+        },
+      });
+
+      if (updatedOrderResult.count === 0) {
+        throw new BadRequestError(data.invalidOrderMessage);
+      }
+
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          amount: data.totalAmount,
+          transactionType: 'PURCHASE',
+          referenceId: `ORDER-${data.orderId}`,
+        },
+      });
+
+      return tx.order.findUniqueOrThrow({
+        where: { id: data.orderId },
+      });
     });
   },
 };

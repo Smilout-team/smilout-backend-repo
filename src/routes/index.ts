@@ -4,6 +4,7 @@ import walletRoutes from '@/features/wallet/wallet.route.js';
 import walletPublicRoutes from '@/features/wallet/wallet.public.route.js';
 import storeRoutes from '@/features/store/store.route.js';
 import ordersRoutes from '@/features/orders/orders.routes.js';
+import paymentRoutes from '@/features/payment/payment.route.js';
 
 const publicRoute = Router();
 
@@ -17,5 +18,7 @@ protectedRoute.use('/orders', ordersRoutes);
 protectedRoute.use('/stores', storeRoutes);
 
 protectedRoute.use('/wallet', walletRoutes);
+
+protectedRoute.use('/payment', paymentRoutes);
 
 export { publicRoute, protectedRoute };

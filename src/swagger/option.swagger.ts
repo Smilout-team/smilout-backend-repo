@@ -116,6 +116,10 @@ For issues or questions, contact the development team.
         description: 'Order processing and tracking',
       },
       {
+        name: 'Payment',
+        description: 'In-store cart payment with wallet',
+      },
+      {
         name: 'Wallet',
         description: 'Digital wallet and transaction management',
       },
