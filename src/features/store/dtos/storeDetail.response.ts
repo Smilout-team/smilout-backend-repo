@@ -4,4 +4,5 @@ export interface StoreDetailResponse {
   address: string;
   contactPhone: string;
   avatarKey: string;
+  coordinate: string | null;
 }

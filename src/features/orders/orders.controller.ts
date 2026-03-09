@@ -3,6 +3,19 @@ import { ordersService } from './orders.service.js';
 import { catchAsync } from '@/utils/catchAsync.js';
 import { ApiResponse } from '@/core/apiResponse.js';
 
+export const getMyOrders = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+
+  const orders = await ordersService.getMyOrders(userId);
+
+  const response = ApiResponse.success(
+    'Lấy lịch sử đơn hàng thành công',
+    orders
+  );
+
+  return res.status(response.statusCode).json(response);
+});
+
 export const scanProduct = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
 
@@ -60,6 +73,44 @@ export const updateOrderItemQuantity = catchAsync(
     );
 
     const response = ApiResponse.success(result.message, result.updatedItem);
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const repurchaseOrder = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const result = await ordersService.repurchaseOrder(userId, req.body);
+
+    const response = ApiResponse.success(
+      'Tìm cửa hàng đề xuất thành công',
+      result
+    );
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const repurchaseToCart = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const result = await ordersService.repurchaseToCart(userId, req.body);
+
+    const response = ApiResponse.success(
+      'Tạo giỏ hàng mua lại thành công',
+      result
+    );
 
     return res.status(response.statusCode).json(response);
   }

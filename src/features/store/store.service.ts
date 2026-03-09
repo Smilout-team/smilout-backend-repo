@@ -60,6 +60,7 @@ const storeScanService = {
       address: store.address,
       contactPhone: store.contactPhone,
       avatarKey: store.avatarKey,
+      coordinate: store.coordinate,
     };
   },
 };

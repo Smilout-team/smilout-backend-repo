@@ -4,10 +4,58 @@ import { ORDERS_MESSAGES } from './orders.messages.js';
 import type {
   ScanProductRequestDto,
   ScanProductResponseDto,
+  RepurchaseOrderRequestDto,
+  RepurchaseOrderResponseDto,
+  StoreRecommendation,
+  ProductAvailability,
+  OrderHistoryItemDto,
+  RepurchaseToCartRequestDto,
+  RepurchaseToCartResponseDto,
 } from './dtos/index.js';
 import { BadRequestError } from '@/core/apiError.js';
+import {
+  parseCoordinates,
+  calculateDistance,
+} from '@/shared/utils/coordinate.util.js';
+import { calculateOrderTotal } from './utils/orderCalculation.util.js';
 
 export const ordersService = {
+  getMyOrders: async (userId: string): Promise<OrderHistoryItemDto[]> => {
+    const orders: Awaited<
+      ReturnType<typeof orderRepository.findOrdersByConsumer>
+    > = await orderRepository.findOrdersByConsumer(userId);
+
+    const successfulOrders = orders.filter(
+      (order: { status: string }) =>
+        order.status === 'PAID' || order.status === 'PREPARING'
+    );
+
+    return successfulOrders.map((order: (typeof orders)[number]) => ({
+      id: order.id,
+      orderType: order.orderType,
+      status: order.status,
+      deliveryAddress: order.deliveryAddress,
+      deliveryOption: order.deliveryOption,
+      scheduledDeliveryAt: order.scheduledDeliveryAt,
+      createdAt: order.createdAt,
+      totalAmount: Number(order.totalAmount),
+      store: {
+        id: order.store.id,
+        storeName: order.store.storeName,
+        address: order.store.address,
+      },
+      totalItems: order.orderItems.reduce(
+        (sum: number, item: { quantity: number }) => sum + item.quantity,
+        0
+      ),
+      items: order.orderItems.map((item: any) => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        priceAtPurchase: Number(item.priceAtPurchase),
+      })),
+    }));
+  },
+
   scanProduct: async (
     userId: string,
     payload: ScanProductRequestDto
@@ -51,11 +99,7 @@ export const ordersService = {
     await orderRepository.decreaseProductStock(product.id, 1);
 
     const items = await orderRepository.findOrderItems(cart.id);
-
-    const total = items.reduce((sum: Prisma.Decimal, item) => {
-      return sum.plus(item.priceAtPurchase.mul(item.quantity));
-    }, new Prisma.Decimal(0));
-
+    const total = calculateOrderTotal(items);
     await orderRepository.updateOrderTotal(cart.id, total);
 
     const updatedItem = await orderRepository.findOrderItem(
@@ -103,10 +147,7 @@ export const ordersService = {
     await orderRepository.deleteOrderItem(itemId);
 
     const items = await orderRepository.findOrderItems(orderId);
-    const total = items.reduce((sum: Prisma.Decimal, orderItem) => {
-      return sum.plus(orderItem.priceAtPurchase.mul(orderItem.quantity));
-    }, new Prisma.Decimal(0));
-
+    const total = calculateOrderTotal(items);
     await orderRepository.updateOrderTotal(orderId, total);
 
     return {
@@ -156,10 +197,7 @@ export const ordersService = {
     await orderRepository.updateOrderItemQuantity(itemId, newQuantity);
 
     const items = await orderRepository.findOrderItems(orderId);
-    const total = items.reduce((sum: Prisma.Decimal, orderItem) => {
-      return sum.plus(orderItem.priceAtPurchase.mul(orderItem.quantity));
-    }, new Prisma.Decimal(0));
-
+    const total = calculateOrderTotal(items);
     await orderRepository.updateOrderTotal(orderId, total);
 
     const updatedItem = await orderRepository.findOrderItemById(itemId);
@@ -174,4 +212,290 @@ export const ordersService = {
       },
     };
   },
+
+  repurchaseOrder: async (
+    userId: string,
+    payload: RepurchaseOrderRequestDto
+  ): Promise<RepurchaseOrderResponseDto> => {
+    type OriginalOrderProductData = {
+      productName: string;
+      quantity: number;
+      originalPrice: number;
+      discountedPrice: number;
+    };
+
+    type StoreProductData = {
+      id: string;
+      name: string;
+      barcode: string;
+      originalPrice: Prisma.Decimal;
+      discountingPrice: Prisma.Decimal;
+      stockQuantity: number;
+    };
+
+    const { orderId, userLatitude, userLongitude } = payload;
+
+    const order = await orderRepository.findOrderById(orderId);
+
+    if (!order) {
+      throw new BadRequestError(ORDERS_MESSAGES.ORDER_NOT_FOUND);
+    }
+
+    if (order.consumerId !== userId) {
+      throw new BadRequestError(ORDERS_MESSAGES.USER_NOT_PERMITTED);
+    }
+
+    if (!order.orderItems || order.orderItems.length === 0) {
+      throw new BadRequestError(ORDERS_MESSAGES.ORDER_NOT_INCLUDE_ITEMS);
+    }
+
+    const productMap = new Map<string, OriginalOrderProductData>();
+    for (const item of order.orderItems) {
+      productMap.set(item.product.barcode, {
+        productName: item.product.name,
+        quantity: item.quantity,
+        originalPrice: Number(item.product.originalPrice),
+        discountedPrice: Number(item.product.discountingPrice),
+      });
+    }
+
+    const productBarcodes = Array.from(productMap.keys());
+
+    const stores =
+      await orderRepository.findAllStoresWithProducts(productBarcodes);
+
+    if (stores.length === 0) {
+      throw new BadRequestError(ORDERS_MESSAGES.SIMILAR_STORES_NOT_FOUND);
+    }
+
+    const recommendations: StoreRecommendation[] = [];
+
+    for (const store of stores) {
+      const availableProducts: ProductAvailability[] = [];
+      const unavailableProducts: string[] = [];
+      let totalPrice = 0;
+      let totalOriginalPrice = 0;
+
+      for (const [barcode, originalData] of productMap.entries()) {
+        const storeProduct = store.products.find(
+          (p: StoreProductData) => p.barcode === barcode
+        );
+
+        if (
+          storeProduct &&
+          storeProduct.stockQuantity >= originalData.quantity
+        ) {
+          const price = Number(storeProduct.discountingPrice);
+          const originalPrice = Number(storeProduct.originalPrice);
+
+          availableProducts.push({
+            productName: originalData.productName,
+            originalPrice,
+            discountedPrice: price,
+            available: true,
+            stockQuantity: storeProduct.stockQuantity,
+          });
+
+          totalPrice += price * originalData.quantity;
+          totalOriginalPrice += originalPrice * originalData.quantity;
+        } else {
+          unavailableProducts.push(originalData.productName);
+        }
+      }
+
+      const availabilityRate =
+        (availableProducts.length / productMap.size) * 100;
+
+      if (availabilityRate < 50) {
+        continue;
+      }
+
+      let distance: number | null = null;
+
+      if (
+        userLatitude !== undefined &&
+        userLongitude !== undefined &&
+        store.coordinate
+      ) {
+        const storeCoords = parseCoordinates(store.coordinate);
+        if (storeCoords) {
+          distance = calculateDistance(
+            userLatitude,
+            userLongitude,
+            storeCoords.lat,
+            storeCoords.lng
+          );
+        }
+      }
+
+      let recommendation: 'best' | 'good' | 'alternative' = 'alternative';
+      if (availabilityRate === 100) {
+        recommendation = 'best';
+      } else if (availabilityRate >= 75) {
+        recommendation = 'good';
+      }
+
+      recommendations.push({
+        storeId: store.id,
+        storeName: store.storeName,
+        address: store.address,
+        distance,
+        totalPrice,
+        totalOriginalPrice,
+        availableProducts,
+        unavailableProducts,
+        availabilityRate,
+        recommendation,
+      });
+    }
+
+    recommendations.sort((a, b) => {
+      if (a.availabilityRate !== b.availabilityRate) {
+        return b.availabilityRate - a.availabilityRate;
+      }
+
+      if (a.distance !== null && b.distance !== null) {
+        if (a.distance !== b.distance) {
+          return a.distance - b.distance;
+        }
+      }
+
+      if (a.totalPrice !== b.totalPrice) {
+        return a.totalPrice - b.totalPrice;
+      }
+
+      return 0;
+    });
+
+    recommendations.forEach((recommendation, index) => {
+      if (index === 0 && recommendation.availabilityRate === 100) {
+        recommendation.recommendation = 'best';
+      } else if (recommendation.availabilityRate >= 75) {
+        recommendation.recommendation = 'good';
+      } else {
+        recommendation.recommendation = 'alternative';
+      }
+    });
+
+    return {
+      orderId: order.id,
+      originalStoreName: order.store.storeName,
+      productCount: order.orderItems.length,
+      storeRecommendations: recommendations,
+    };
+  },
+
+  repurchaseToCart: async (
+    userId: string,
+    payload: RepurchaseToCartRequestDto
+  ): Promise<RepurchaseToCartResponseDto> => {
+    const { sourceOrderId, targetStoreId } = payload;
+
+    const sourceOrder = await orderRepository.findOrderById(sourceOrderId);
+
+    if (!sourceOrder) {
+      throw new BadRequestError(ORDERS_MESSAGES.ROOT_ORDER_NOT_FOUND);
+    }
+
+    if (sourceOrder.consumerId !== userId) {
+      throw new BadRequestError(ORDERS_MESSAGES.USER_NOT_PERMITTED);
+    }
+
+    const targetStore = await orderRepository.findStoreById(targetStoreId);
+    if (!targetStore) {
+      throw new BadRequestError(ORDERS_MESSAGES.STORE_NOT_FOUND);
+    }
+
+    let cart = await orderRepository.findActiveCart(userId);
+
+    if (
+      !cart ||
+      cart.storeId !== targetStoreId ||
+      cart.orderType !== 'DELIVERY'
+    ) {
+      cart = await orderRepository.create({
+        consumerId: userId,
+        storeId: targetStoreId,
+        orderType: 'DELIVERY',
+        status: 'PENDING',
+        totalAmount: 0,
+      });
+    }
+
+    const sourceItems = sourceOrder.orderItems;
+    const sourceBarcodes = sourceItems.map(
+      (item: { product: { barcode: string } }) => item.product.barcode
+    );
+    const targetProducts = await orderRepository.findProductsByBarcodesInStore(
+      targetStoreId,
+      sourceBarcodes
+    );
+
+    const targetProductMap = new Map<string, any>(
+      targetProducts.map((product: { barcode: string }) => [
+        product.barcode,
+        product,
+      ])
+    );
+
+    const skippedItems: string[] = [];
+    let addedItemsCount = 0;
+
+    for (const sourceItem of sourceItems) {
+      const targetProduct = targetProductMap.get(sourceItem.product.barcode);
+
+      if (!targetProduct) {
+        skippedItems.push(sourceItem.product.name);
+        continue;
+      }
+
+      if (targetProduct.stockQuantity < sourceItem.quantity) {
+        skippedItems.push(sourceItem.product.name);
+        continue;
+      }
+
+      const price = Number(
+        targetProduct.discountingPrice ?? targetProduct.originalPrice
+      );
+
+      const existingCartItem = await orderRepository.findOrderItem(
+        cart.id,
+        targetProduct.id
+      );
+
+      if (existingCartItem) {
+        await orderRepository.updateOrderItemQuantity(
+          existingCartItem.id,
+          existingCartItem.quantity + sourceItem.quantity
+        );
+      } else {
+        await orderRepository.createOrderItemWithQuantity(
+          cart.id,
+          targetProduct.id,
+          price,
+          sourceItem.quantity
+        );
+      }
+
+      await orderRepository.decreaseProductStock(
+        targetProduct.id,
+        sourceItem.quantity
+      );
+
+      addedItemsCount += 1;
+    }
+
+    const cartItems = await orderRepository.findOrderItems(cart.id);
+    const total = calculateOrderTotal(cartItems);
+    await orderRepository.updateOrderTotal(cart.id, total);
+
+    return {
+      orderId: cart.id,
+      storeId: targetStoreId,
+      addedItemsCount,
+      skippedItems,
+    };
+  },
 };
+
+export default ordersService;

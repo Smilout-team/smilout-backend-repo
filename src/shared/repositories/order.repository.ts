@@ -1,6 +1,11 @@
 import { prisma } from '@/utils/prisma.js';
-import { Prisma, type OrderItem } from '../../../generated/prisma/index.js';
+import { Prisma } from '../../../generated/prisma/index.js';
 import { BadRequestError } from '@/core/apiError.js';
+import type {
+  CreateOrderParams,
+  CompletePaymentTransactionParams,
+  OrderItemWithProduct,
+} from '@/shared/dtos/repositories/order.repository.dto.js';
 
 const orderRepository = {
   findProductByBarcode(barcode: string, storeId: string) {
@@ -27,13 +32,26 @@ const orderRepository = {
     });
   },
 
-  create(data: {
-    consumerId: string;
-    storeId: string;
-    orderType: string;
-    status: string;
-    totalAmount: number;
-  }) {
+  findPendingCartById(consumerId: string, orderId: string) {
+    return prisma.order.findFirst({
+      where: {
+        id: orderId,
+        consumerId,
+        status: 'PENDING',
+        deletedAt: null,
+      },
+      include: {
+        store: {
+          select: {
+            id: true,
+            coordinate: true,
+          },
+        },
+      },
+    });
+  },
+
+  create(data: CreateOrderParams) {
     return prisma.order.create({
       data: {
         consumerId: data.consumerId,
@@ -67,18 +85,7 @@ const orderRepository = {
     });
   },
 
-  findOrderItems(orderId: string): Promise<
-    (OrderItem & {
-      product?: {
-        name: string;
-        imageUrls: string[];
-        description: string;
-        stockQuantity: number;
-        expiryDate: Date | null;
-        category: { name: string | null } | null;
-      } | null;
-    })[]
-  > {
+  findOrderItems(orderId: string): Promise<OrderItemWithProduct[]> {
     return prisma.orderItem.findMany({
       where: { orderId },
       include: {
@@ -106,6 +113,22 @@ const orderRepository = {
         orderId,
         productId,
         quantity: 1,
+        priceAtPurchase: new Prisma.Decimal(price),
+      },
+    });
+  },
+
+  createOrderItemWithQuantity(
+    orderId: string,
+    productId: string,
+    price: number,
+    quantity: number
+  ) {
+    return prisma.orderItem.create({
+      data: {
+        orderId,
+        productId,
+        quantity,
         priceAtPurchase: new Prisma.Decimal(price),
       },
     });
@@ -146,13 +169,9 @@ const orderRepository = {
     });
   },
 
-  completePaymentTransaction: async (data: {
-    consumerId: string;
-    orderId: string;
-    totalAmount: number;
-    insufficientBalanceMessage: string;
-    invalidOrderMessage: string;
-  }) => {
+  completePaymentTransaction: async (
+    data: CompletePaymentTransactionParams
+  ) => {
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const wallet = await tx.wallet.findFirst({
         where: { userId: data.consumerId, deletedAt: null },
@@ -186,8 +205,11 @@ const orderRepository = {
           deletedAt: null,
         },
         data: {
-          status: 'PAID',
+          status: 'PREPARING',
           totalAmount: data.totalAmount,
+          deliveryAddress: data.deliveryAddress,
+          deliveryOption: data.deliveryOption,
+          scheduledDeliveryAt: data.scheduledDeliveryAt,
         },
       });
 
@@ -207,6 +229,138 @@ const orderRepository = {
       return tx.order.findUniqueOrThrow({
         where: { id: data.orderId },
       });
+    });
+  },
+
+  findOrderById(orderId: string) {
+    return prisma.order.findFirst({
+      where: {
+        id: orderId,
+        deletedAt: null,
+      },
+      include: {
+        store: {
+          select: {
+            id: true,
+            storeName: true,
+            address: true,
+            coordinate: true,
+          },
+        },
+        orderItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                barcode: true,
+                originalPrice: true,
+                discountingPrice: true,
+                stockQuantity: true,
+                imageUrls: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  findOrdersByConsumer(consumerId: string) {
+    return prisma.order.findMany({
+      where: {
+        consumerId,
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        store: {
+          select: {
+            id: true,
+            storeName: true,
+            address: true,
+          },
+        },
+        orderItems: {
+          select: {
+            quantity: true,
+            priceAtPurchase: true,
+            product: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  findAllStoresWithProducts(productBarcodes: string[]) {
+    return prisma.store.findMany({
+      where: {
+        deletedAt: null,
+        products: {
+          some: {
+            barcode: {
+              in: productBarcodes,
+            },
+            deletedAt: null,
+            isAvailable: true,
+          },
+        },
+      },
+      include: {
+        products: {
+          where: {
+            barcode: {
+              in: productBarcodes,
+            },
+            deletedAt: null,
+            isAvailable: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            barcode: true,
+            originalPrice: true,
+            discountingPrice: true,
+            stockQuantity: true,
+          },
+        },
+      },
+    });
+  },
+
+  findStoreById(storeId: string) {
+    return prisma.store.findFirst({
+      where: {
+        id: storeId,
+        deletedAt: null,
+      },
+    });
+  },
+
+  findProductsByBarcodesInStore(storeId: string, barcodes: string[]) {
+    return prisma.product.findMany({
+      where: {
+        storeId,
+        barcode: {
+          in: barcodes,
+        },
+        isAvailable: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        barcode: true,
+        originalPrice: true,
+        discountingPrice: true,
+        stockQuantity: true,
+      },
     });
   },
 };
