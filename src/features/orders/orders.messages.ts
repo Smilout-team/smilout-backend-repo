@@ -8,4 +8,10 @@ export const ORDERS_MESSAGES = {
   UPDATE_SUCCESS: 'Cập nhật số lượng sản phẩm thành công',
   ITEM_NOT_FOUND: 'Sản phẩm trong giỏ hàng không tồn tại',
   INVALID_QUANTITY: 'Số lượng phải lớn hơn 0',
+  ORDER_NOT_FOUND: 'Đơn hàng không tồn tại',
+  USER_NOT_PERMITTED: 'Bạn không có quyền truy cập đơn hàng này',
+  ORDER_NOT_INCLUDE_ITEMS: 'Đơn hàng không có sản phẩm',
+  SIMILAR_STORES_NOT_FOUND: 'Không tìm thấy cửa hàng nào có sản phẩm tương tự',
+  ROOT_ORDER_NOT_FOUND: 'Đơn hàng nguồn không tồn tại',
+  STORE_NOT_FOUND: 'Cửa hàng được chọn không tồn tại',
 };

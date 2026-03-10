@@ -31,4 +31,7 @@ export const config = {
     frontendRedirectUrl: process.env.SEPAY_FRONTEND_REDIRECT_URL,
     ipnUrl: process.env.SEPAY_IPN_URL,
   },
+  goong: {
+    mapKey: process.env.GOONG_MAP_KEY,
+  },
 };

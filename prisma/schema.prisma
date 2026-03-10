@@ -39,6 +39,11 @@ enum OrderStatus {
   PREPARING
 }
 
+enum DeliveryOption {
+  ASAP
+  SCHEDULED
+}
+
 enum UserRole {
   CONSUMER
   STORE_STAFF
@@ -255,6 +260,9 @@ model Order {
   storeId     String      @map("store_id") @db.Uuid
   orderType   OrderType   @map("order_type")
   status       OrderStatus @default(PENDING)
+  deliveryAddress String?   @map("delivery_address") @db.VarChar(255)
+  deliveryOption  DeliveryOption? @map("delivery_option")
+  scheduledDeliveryAt DateTime? @map("scheduled_delivery_at") @db.Timestamp(6)
   totalAmount Decimal     @map("total_amount") @db.Decimal(11, 2)
   createdAt   DateTime    @map("created_at") @default(now()) @db.Timestamp(6)
   updatedAt   DateTime    @map("updated_at") @updatedAt @db.Timestamp(6)
