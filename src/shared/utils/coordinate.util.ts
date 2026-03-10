@@ -12,9 +12,35 @@ export function parseCoordinates(
 
     const parts = coordinate.split(',');
     if (parts.length === 2) {
+      const first = parseFloat(parts[0].trim());
+      const second = parseFloat(parts[1].trim());
+
+      if (Number.isNaN(first) || Number.isNaN(second)) {
+        return null;
+      }
+
+      // Support both formats:
+      // - lat,lng
+      // - lng,lat
+      // by checking valid ranges.
+      // Latitude must be in [-90, 90], longitude in [-180, 180].
+      if (Math.abs(first) <= 90 && Math.abs(second) <= 180) {
+        return {
+          lat: first,
+          lng: second,
+        };
+      }
+
+      if (Math.abs(second) <= 90 && Math.abs(first) <= 180) {
+        return {
+          lat: second,
+          lng: first,
+        };
+      }
+
       return {
-        lat: parseFloat(parts[0].trim()),
-        lng: parseFloat(parts[1].trim()),
+        lat: first,
+        lng: second,
       };
     }
 

@@ -3,6 +3,7 @@ import { validate } from '@/middlewares/validate.middleware.js';
 import { authMiddleware } from '@/middlewares/auth.middleware.js';
 import { scanStoreSchema } from './schemas/scanStore.schema.js';
 import { storeDetailSchema } from './schemas/storeDetail.schema.js';
+import { nearbyStoresSchema } from './schemas/nearbyStores.schema.js';
 import { storeScanController } from './store.controller.js';
 const storeScanRoutes = Router();
 
@@ -11,6 +12,13 @@ storeScanRoutes.post(
   authMiddleware,
   validate(scanStoreSchema),
   storeScanController.scanStore
+);
+
+storeScanRoutes.get(
+  '/nearby',
+  authMiddleware,
+  validate(nearbyStoresSchema),
+  storeScanController.getNearbyStores
 );
 
 storeScanRoutes.get(
