@@ -9,6 +9,23 @@ class StoreRepository {
       },
     });
   }
+
+  async findActiveStoresWithCoordinates() {
+    return prisma.store.findMany({
+      where: {
+        deletedAt: null,
+        coordinate: {
+          not: null,
+        },
+      },
+      select: {
+        id: true,
+        storeName: true,
+        address: true,
+        coordinate: true,
+      },
+    });
+  }
 }
 
 export default new StoreRepository();

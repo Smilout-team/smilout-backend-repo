@@ -36,4 +36,29 @@ export const storeScanController = {
 
     return res.status(response.statusCode).json(response);
   }),
+
+  getNearbyStores: catchAsync(async (req: Request, res: Response) => {
+    const {
+      latitude,
+      longitude,
+      limit = 4,
+    } = req.query as {
+      latitude: string;
+      longitude: string;
+      limit?: string;
+    };
+
+    const data = await storeScanService.getNearbyStores(
+      Number(latitude),
+      Number(longitude),
+      Number(limit)
+    );
+
+    const response = ApiResponse.success(
+      STORE_SCAN_MESSAGES.GET_NEARBY_STORES_SUCCESS,
+      data
+    );
+
+    return res.status(response.statusCode).json(response);
+  }),
 };

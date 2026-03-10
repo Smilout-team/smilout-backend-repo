@@ -4,6 +4,11 @@ import orderRepository from '@/shared/repositories/order.repository.js';
 import { STORE_SCAN_MESSAGES } from './store.messages.js';
 import type { ScanStoreResponse } from './dtos/scanStore.response.js';
 import type { StoreDetailResponse } from './dtos/storeDetail.response.js';
+import type { NearbyStoreResponse } from './dtos/nearbyStore.response.js';
+import {
+  calculateDistance,
+  parseCoordinates,
+} from '@/shared/utils/coordinate.util.js';
 
 const storeScanService = {
   scanStore: async (
@@ -62,6 +67,51 @@ const storeScanService = {
       avatarKey: store.avatarKey,
       coordinate: store.coordinate,
     };
+  },
+
+  getNearbyStores: async (
+    latitude: number,
+    longitude: number,
+    limit: number
+  ): Promise<NearbyStoreResponse[]> => {
+    const stores = await storeRepository.findActiveStoresWithCoordinates();
+
+    const mapped = stores
+      .map((store: StoreDetailResponse) => {
+        if (!store.coordinate) {
+          return null;
+        }
+
+        const parsed = parseCoordinates(store.coordinate);
+        if (!parsed) {
+          return null;
+        }
+
+        return {
+          storeId: store.id,
+          storeName: store.storeName,
+          address: store.address,
+          latitude: parsed.lat,
+          longitude: parsed.lng,
+          distance: calculateDistance(
+            latitude,
+            longitude,
+            parsed.lat,
+            parsed.lng
+          ),
+        };
+      })
+      .filter(
+        (item: NearbyStoreResponse | null): item is NearbyStoreResponse =>
+          !!item
+      )
+      .sort(
+        (a: NearbyStoreResponse, b: NearbyStoreResponse) =>
+          a.distance - b.distance
+      )
+      .slice(0, limit);
+
+    return mapped;
   },
 };
 
