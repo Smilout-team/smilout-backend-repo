@@ -208,6 +208,7 @@ const orderRepository = {
           status: 'PREPARING',
           totalAmount: data.totalAmount,
           deliveryAddress: data.deliveryAddress,
+          deliveryPhoneNumber: data.deliveryPhoneNumber,
           deliveryOption: data.deliveryOption,
           scheduledDeliveryAt: data.scheduledDeliveryAt,
         },
@@ -361,6 +362,66 @@ const orderRepository = {
         discountingPrice: true,
         stockQuantity: true,
       },
+    });
+  },
+
+  findStaffByUserId(userId: string) {
+    return prisma.storeStaff.findFirst({
+      where: {
+        userId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        userId: true,
+        storeId: true,
+      },
+    });
+  },
+
+  findOrdersByStore(storeId: string) {
+    return prisma.order.findMany({
+      where: {
+        storeId,
+        orderType: 'DELIVERY',
+        status: {
+          in: ['PENDING', 'PREPARING', 'PAID', 'COMPLETED', 'REJECTED'],
+        },
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        consumer: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+          },
+        },
+        orderItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                imageUrls: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  updateOrderStatus(
+    orderId: string,
+    status: 'PENDING' | 'PREPARING' | 'PAID' | 'COMPLETED' | 'REJECTED'
+  ) {
+    return prisma.order.update({
+      where: { id: orderId },
+      data: { status },
     });
   },
 };

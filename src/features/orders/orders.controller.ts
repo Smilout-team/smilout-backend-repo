@@ -16,6 +16,48 @@ export const getMyOrders = catchAsync(async (req: Request, res: Response) => {
   return res.status(response.statusCode).json(response);
 });
 
+export const getStaffOrders = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const orders = await ordersService.getStaffOrders(userId);
+
+    const response = ApiResponse.success(
+      'Lấy danh sách đơn hàng thành công',
+      orders
+    );
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const updateOrderStatus = catchAsync(
+  async (req: Request, res: Response) => {
+    const orderId = Array.isArray(req.params.orderId)
+      ? req.params.orderId[0]
+      : req.params.orderId;
+    const { status } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    await ordersService.updateOrderStatus(userId, orderId, status);
+
+    const response = ApiResponse.success(
+      'Cập nhật trạng thái đơn hàng thành công',
+      null
+    );
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
 export const scanProduct = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
 
