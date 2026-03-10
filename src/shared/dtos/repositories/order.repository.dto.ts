@@ -13,6 +13,7 @@ export interface CompletePaymentTransactionParams {
   orderId: string;
   totalAmount: number;
   deliveryAddress?: string;
+  deliveryPhoneNumber?: string;
   deliveryOption?: 'ASAP' | 'SCHEDULED';
   scheduledDeliveryAt?: Date | null;
   insufficientBalanceMessage: string;

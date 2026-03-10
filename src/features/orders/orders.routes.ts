@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import {
   getMyOrders,
+  getStaffOrders,
+  updateOrderStatus,
   scanProduct,
   getOrderItems,
   deleteOrderItem,
@@ -20,8 +22,10 @@ import { authMiddleware } from '@/middlewares/auth.middleware.js';
 const router = Router();
 
 router.use(authMiddleware);
+router.get('/staff/orders', getStaffOrders);
 
 router.get('/me', getMyOrders);
+router.patch('/:orderId/status', updateOrderStatus);
 
 router.post('/scan-product', validate(scanProductSchema), scanProduct);
 

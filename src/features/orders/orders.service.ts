@@ -121,7 +121,7 @@ export const ordersService = {
       throw new BadRequestError(ORDERS_MESSAGES.NO_ACTIVE_CART);
     }
 
-    return items.map((item) => ({
+    return items.map((item: any) => ({
       id: item.id,
       productId: item.productId,
       name: item.product?.name ?? 'Không xác định',
@@ -495,6 +495,80 @@ export const ordersService = {
       addedItemsCount,
       skippedItems,
     };
+  },
+
+  updateOrderStatus: async (
+    userId: string,
+    orderId: string,
+    status: string
+  ) => {
+    const staffRecord = await orderRepository.findStaffByUserId(userId);
+
+    if (!staffRecord) {
+      throw new BadRequestError('Không tìm thấy thông tin nhân viên cửa hàng');
+    }
+
+    const order = await orderRepository.findOrderById(orderId);
+
+    if (!order) {
+      throw new BadRequestError('Không tìm thấy đơn hàng');
+    }
+
+    if (order.storeId !== staffRecord.storeId) {
+      throw new BadRequestError('Không có quyền cập nhật đơn hàng này');
+    }
+
+    const validStatuses = [
+      'PENDING',
+      'PREPARING',
+      'PAID',
+      'COMPLETED',
+      'REJECTED',
+    ] as const;
+
+    if (!validStatuses.includes(status as (typeof validStatuses)[number])) {
+      throw new BadRequestError('Trạng thái không hợp lệ');
+    }
+
+    await orderRepository.updateOrderStatus(
+      orderId,
+      status as 'PENDING' | 'PREPARING' | 'PAID' | 'COMPLETED' | 'REJECTED'
+    );
+  },
+
+  getStaffOrders: async (userId: string) => {
+    const staffRecord = await orderRepository.findStaffByUserId(userId);
+
+    if (!staffRecord) {
+      throw new BadRequestError('Không tìm thấy thông tin nhân viên cửa hàng');
+    }
+
+    const orders = await orderRepository.findOrdersByStore(staffRecord.storeId);
+
+    return orders.map((order: any) => ({
+      id: order.id,
+      orderType: order.orderType,
+      status: order.status,
+      deliveryAddress: order.deliveryAddress,
+      deliveryPhoneNumber: order.deliveryPhoneNumber,
+      deliveryOption: order.deliveryOption,
+      scheduledDeliveryAt: order.scheduledDeliveryAt,
+      createdAt: order.createdAt,
+      totalAmount: Number(order.totalAmount),
+      consumer: {
+        id: order.consumer.id,
+        name: order.consumer.name,
+        phoneNumber: order.consumer.phoneNumber,
+      },
+      items: order.orderItems.map((item: any) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.product.name,
+        quantity: item.quantity,
+        priceAtPurchase: Number(item.priceAtPurchase),
+        imageUrls: item.product.imageUrls,
+      })),
+    }));
   },
 };
 

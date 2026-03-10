@@ -37,6 +37,8 @@ enum OrderStatus {
   PENDING
   PAID
   PREPARING
+  COMPLETED
+  REJECTED
 }
 
 enum DeliveryOption {
@@ -94,6 +96,7 @@ model User {
   refreshTokens       RefreshToken[]
   orders               Order[]
   ownedStores         Store[]               @relation("StoreOwner")
+  storeStaff          StoreStaff[]
   notifications        Notification[]
 
   @@map("users")
@@ -187,6 +190,22 @@ model Device {
   @@map("devices")
 }
 
+model StoreStaff {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  storeId   String    @map("store_id") @db.Uuid
+  createdAt DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
+  updatedAt DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id])
+  store Store @relation(fields: [storeId], references: [id])
+
+  @@unique([userId, storeId])
+  @@map("store_staff")
+}
+
 model Store {
   id                    String        @id @default(uuid()) @db.Uuid
   storeOwnerId        String        @map("store_owner_id") @db.Uuid
@@ -204,6 +223,7 @@ model Store {
 
   // Relations
   storeOwner           User                @relation("StoreOwner", fields: [storeOwnerId], references: [id])
+  staff                 StoreStaff[]
   devices               Device[]
   products              Product[]
   orders                Order[]
@@ -261,6 +281,7 @@ model Order {
   orderType   OrderType   @map("order_type")
   status       OrderStatus @default(PENDING)
   deliveryAddress String?   @map("delivery_address") @db.VarChar(255)
+  deliveryPhoneNumber String? @map("delivery_phone_number") @db.VarChar(15)
   deliveryOption  DeliveryOption? @map("delivery_option")
   scheduledDeliveryAt DateTime? @map("scheduled_delivery_at") @db.Timestamp(6)
   totalAmount Decimal     @map("total_amount") @db.Decimal(11, 2)
