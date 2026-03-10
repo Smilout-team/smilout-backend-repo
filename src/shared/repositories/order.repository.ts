@@ -28,6 +28,25 @@ const orderRepository = {
       where: {
         consumerId,
         status: 'PENDING',
+        orderType: 'INSTORE',
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  },
+
+  findActiveCartForDelivery(consumerId: string) {
+    return prisma.order.findFirst({
+      where: {
+        consumerId,
+        status: 'PENDING',
+        orderType: 'DELIVERY',
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   },
@@ -48,6 +67,79 @@ const orderRepository = {
           },
         },
       },
+    });
+  },
+
+  clearPendingCartsByConsumer(consumerId: string) {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const pendingOrders = await tx.order.findMany({
+        where: {
+          consumerId,
+          status: 'PENDING',
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (pendingOrders.length === 0) {
+        return;
+      }
+
+      const pendingOrderIds = pendingOrders.map((order) => order.id);
+
+      const pendingItems = await tx.orderItem.findMany({
+        where: {
+          orderId: { in: pendingOrderIds },
+          deletedAt: null,
+        },
+        select: {
+          productId: true,
+          quantity: true,
+        },
+      });
+
+      const restoreQuantityMap = new Map<string, number>();
+      for (const item of pendingItems) {
+        restoreQuantityMap.set(
+          item.productId,
+          (restoreQuantityMap.get(item.productId) ?? 0) + item.quantity
+        );
+      }
+
+      for (const [productId, quantity] of restoreQuantityMap.entries()) {
+        await tx.product.update({
+          where: { id: productId },
+          data: {
+            stockQuantity: {
+              increment: quantity,
+            },
+          },
+        });
+      }
+
+      const now = new Date();
+
+      await tx.orderItem.updateMany({
+        where: {
+          orderId: { in: pendingOrderIds },
+          deletedAt: null,
+        },
+        data: {
+          deletedAt: now,
+        },
+      });
+
+      await tx.order.updateMany({
+        where: {
+          id: { in: pendingOrderIds },
+          deletedAt: null,
+        },
+        data: {
+          deletedAt: now,
+        },
+      });
     });
   },
 
@@ -205,7 +297,7 @@ const orderRepository = {
           deletedAt: null,
         },
         data: {
-          status: 'PREPARING',
+          status: data.nextStatus,
           totalAmount: data.totalAmount,
           deliveryAddress: data.deliveryAddress,
           deliveryPhoneNumber: data.deliveryPhoneNumber,

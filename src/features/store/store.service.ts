@@ -18,7 +18,10 @@ const storeScanService = {
     const activeCart = await orderRepository.findActiveCart(consumerId);
 
     if (activeCart) {
-      if (activeCart.storeId === storeId) {
+      if (
+        activeCart.storeId === storeId &&
+        activeCart.orderType === 'INSTORE'
+      ) {
         return {
           orderId: activeCart.id,
           storeId: activeCart.storeId,
@@ -34,6 +37,8 @@ const storeScanService = {
     if (!store) {
       throw new BadRequestError(STORE_SCAN_MESSAGES.STORE_NOT_FOUND);
     }
+
+    await orderRepository.clearPendingCartsByConsumer(consumerId);
 
     const order = await orderRepository.create({
       consumerId,

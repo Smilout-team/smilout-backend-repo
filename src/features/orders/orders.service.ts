@@ -27,7 +27,9 @@ export const ordersService = {
 
     const successfulOrders = orders.filter(
       (order: { status: string }) =>
-        order.status === 'PAID' || order.status === 'PREPARING'
+        order.status === 'PAID' ||
+        order.status === 'PREPARING' ||
+        order.status === 'COMPLETED'
     );
 
     return successfulOrders.map((order: (typeof orders)[number]) => ({
@@ -306,7 +308,7 @@ export const ordersService = {
       const availabilityRate =
         (availableProducts.length / productMap.size) * 100;
 
-      if (availabilityRate < 50) {
+      if (availableProducts.length !== productMap.size) {
         continue;
       }
 
@@ -367,6 +369,10 @@ export const ordersService = {
       return 0;
     });
 
+    if (recommendations.length === 0) {
+      throw new BadRequestError(ORDERS_MESSAGES.SIMILAR_STORES_NOT_FOUND);
+    }
+
     recommendations.forEach((recommendation, index) => {
       if (index === 0 && recommendation.availabilityRate === 100) {
         recommendation.recommendation = 'best';
@@ -406,21 +412,15 @@ export const ordersService = {
       throw new BadRequestError(ORDERS_MESSAGES.STORE_NOT_FOUND);
     }
 
-    let cart = await orderRepository.findActiveCart(userId);
+    await orderRepository.clearPendingCartsByConsumer(userId);
 
-    if (
-      !cart ||
-      cart.storeId !== targetStoreId ||
-      cart.orderType !== 'DELIVERY'
-    ) {
-      cart = await orderRepository.create({
-        consumerId: userId,
-        storeId: targetStoreId,
-        orderType: 'DELIVERY',
-        status: 'PENDING',
-        totalAmount: 0,
-      });
-    }
+    const cart = await orderRepository.create({
+      consumerId: userId,
+      storeId: targetStoreId,
+      orderType: 'DELIVERY',
+      status: 'PENDING',
+      totalAmount: 0,
+    });
 
     const sourceItems = sourceOrder.orderItems;
     const sourceBarcodes = sourceItems.map(

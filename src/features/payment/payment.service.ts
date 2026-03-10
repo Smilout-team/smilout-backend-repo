@@ -175,6 +175,7 @@ export const paymentService = {
       consumerId: userId,
       orderId: activeCart.id,
       totalAmount,
+      nextStatus: 'PAID',
       deliveryAddress: data.deliveryAddress,
       deliveryOption,
       scheduledDeliveryAt,

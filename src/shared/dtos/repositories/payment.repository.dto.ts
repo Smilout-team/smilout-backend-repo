@@ -32,7 +32,7 @@ export interface DeliveryAddressOptionDto {
 export interface ProcessPaymentResponseDto {
   orderId: string;
   storeId: string;
-  status: 'PREPARING';
+  status: 'PAID' | 'PREPARING';
   deliveryAddress: string | null;
   deliveryOption: 'ASAP' | 'SCHEDULED' | null;
   scheduledDeliveryAt: Date | null;

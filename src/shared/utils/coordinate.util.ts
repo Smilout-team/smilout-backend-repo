@@ -19,11 +19,6 @@ export function parseCoordinates(
         return null;
       }
 
-      // Support both formats:
-      // - lat,lng
-      // - lng,lat
-      // by checking valid ranges.
-      // Latitude must be in [-90, 90], longitude in [-180, 180].
       if (Math.abs(first) <= 90 && Math.abs(second) <= 180) {
         return {
           lat: first,

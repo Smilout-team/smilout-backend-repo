@@ -12,6 +12,7 @@ export interface CompletePaymentTransactionParams {
   consumerId: string;
   orderId: string;
   totalAmount: number;
+  nextStatus: 'PAID' | 'PREPARING';
   deliveryAddress?: string;
   deliveryPhoneNumber?: string;
   deliveryOption?: 'ASAP' | 'SCHEDULED';
