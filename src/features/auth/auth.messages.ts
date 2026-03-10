@@ -14,4 +14,10 @@ export const AUTH_MESSAGES = {
   USER_PROFILE_RETRIEVED_SUCCESSFULLY:
     'Lấy thông tin hồ sơ người dùng thành công',
   PHONE_NUMBER_ALREADY_EXISTS: 'Số điện thoại đã tồn tại',
+  USER_NOT_FOUND: 'Người dùng không tồn tại',
+  OTP_SENT_IF_EMAIL_EXISTS: 'Nếu email tồn tại, mã OTP đã được gửi',
+  OTP_REQUEST_TOO_FREQUENTLY: 'Vui lòng đợi 60 giây trước khi yêu cầu mã mới',
+  INVALID_OTP: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+  OTP_VERIFIED_SUCCESSFULLY: 'Xác thực OTP thành công',
+  PASSWORD_RESET_SUCCESSFULLY: 'Đặt lại mật khẩu thành công',
 } as const;

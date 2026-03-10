@@ -228,6 +228,189 @@
 
 /**
  * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request password reset OTP
+ *     description: |
+ *       Send a One-Time Password (OTP) to the user's email for password reset.
+ *       If the email exists, an OTP will be sent. This endpoint always returns success
+ *       to prevent email enumeration attacks.
+ *
+ *       OTP expires after 10 minutes.
+ *       Users must wait 60 seconds between OTP requests.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ForgotPasswordRequest'
+ *           examples:
+ *             requestOtp:
+ *               summary: Request OTP
+ *               value:
+ *                 email: "john.doe@example.com"
+ *     responses:
+ *       200:
+ *         description: OTP sent if email exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GenericSuccessResponse'
+ *             example:
+ *               statusCode: 200
+ *               message: "If the email exists, an OTP has been sent."
+ *               timestamp: "2026-03-08T10:00:00.000Z"
+ *       429:
+ *         description: OTP requested too frequently
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               statusCode: 429
+ *               message: "Please wait 60 seconds before requesting a new code."
+ *               timestamp: "2026-03-08T10:00:00.000Z"
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /auth/verify-otp:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify OTP for password reset
+ *     description: |
+ *       Verify the OTP code sent to the user's email.
+ *       OTP must be valid and not expired.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/VerifyOtpRequest'
+ *           examples:
+ *             verifyOtp:
+ *               summary: Verify OTP
+ *               value:
+ *                 email: "john.doe@example.com"
+ *                 otp: "123456"
+ *     responses:
+ *       200:
+ *         description: OTP verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GenericSuccessResponse'
+ *             example:
+ *               statusCode: 200
+ *               message: "OTP verification successful."
+ *               timestamp: "2026-03-08T10:00:00.000Z"
+ *       400:
+ *         description: Invalid or expired OTP
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               statusCode: 400
+ *               message: "The OTP is invalid or has expired."
+ *               timestamp: "2026-03-08T10:00:00.000Z"
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset password using OTP
+ *     description: |
+ *       Reset user password using a verified OTP code.
+ *       OTP must be valid and not expired.
+ *       New password must meet security requirements.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ResetPasswordRequest'
+ *           examples:
+ *             resetPassword:
+ *               summary: Reset password
+ *               value:
+ *                 email: "john.doe@example.com"
+ *                 otp: "123456"
+ *                 newPassword: "NewSecurePass123!"
+ *                 confirmPassword: "NewSecurePass123!"
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GenericSuccessResponse'
+ *             example:
+ *               statusCode: 200
+ *               message: "Password reset successful."
+ *               timestamp: "2026-03-08T10:00:00.000Z"
+ *       400:
+ *         description: Invalid OTP or password mismatch
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               invalidOtp:
+ *                 summary: OTP invalid
+ *                 value:
+ *                   statusCode: 400
+ *                   message: "The OTP is invalid or has expired."
+ *                   timestamp: "2026-03-08T10:00:00.000Z"
+ *               passwordMismatch:
+ *                 summary: Password confirmation mismatch
+ *                 value:
+ *                   statusCode: 400
+ *                   message: "Password confirmation does not match"
+ *                   timestamp: "2026-03-08T10:00:00.000Z"
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationError'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
  * /auth/sign-out:
  *   get:
  *     tags: [Auth]

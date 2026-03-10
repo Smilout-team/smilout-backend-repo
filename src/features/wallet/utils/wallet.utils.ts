@@ -37,7 +37,10 @@ export const getBackendBaseUrl = (): string => {
     typeof config.productionUrl === 'string' &&
     config.productionUrl.length > 0;
 
-  const baseUrl = useProdUrl ? config.productionUrl! : `http://localhost:${config.port}`;
+  const baseUrl = useProdUrl
+    ? config.productionUrl!
+    : `http://localhost:${config.port}`;
+
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 };
 
@@ -54,5 +57,7 @@ export const buildCancelCallbackUrl = (invoiceNumber: string): string => {
 };
 
 export const buildIpnUrl = (): string => {
-  return config.sepay.ipnUrl || `${getBackendBaseUrl()}/api/v1/wallet/sepay/ipn`;
+  return (
+    config.sepay.ipnUrl || `${getBackendBaseUrl()}/api/v1/wallet/sepay/ipn`
+  );
 };

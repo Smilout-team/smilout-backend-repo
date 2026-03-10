@@ -56,6 +56,39 @@ export const authController = {
     return res.status(response.statusCode).json(response);
   }),
 
+  forgotPassword: catchAsync(async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    await authService.forgotPassword(email);
+
+    const response = ApiResponse.success(
+      AUTH_MESSAGES.OTP_SENT_IF_EMAIL_EXISTS
+    );
+    return res.status(response.statusCode).json(response);
+  }),
+
+  verifyResetOtp: catchAsync(async (req: Request, res: Response) => {
+    const { email, otp } = req.body;
+
+    await authService.verifyResetOtp(email, otp);
+
+    const response = ApiResponse.success(
+      AUTH_MESSAGES.OTP_VERIFIED_SUCCESSFULLY
+    );
+    return res.status(response.statusCode).json(response);
+  }),
+
+  resetPassword: catchAsync(async (req: Request, res: Response) => {
+    const { email, newPassword } = req.body;
+
+    await authService.resetPassword(email, newPassword);
+
+    const response = ApiResponse.success(
+      AUTH_MESSAGES.PASSWORD_RESET_SUCCESSFULLY
+    );
+    return res.status(response.statusCode).json(response);
+  }),
+
   signOut: catchAsync(async (req: Request, res: Response) => {
     await authService.signOut(req.user.id);
 
