@@ -59,6 +59,57 @@
  *           description: User's password
  *           example: "SecurePass123!"
  *
+ *     ForgotPasswordRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: Email address to receive OTP code
+ *           example: "john.doe@example.com"
+ *
+ *     VerifyOtpRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - otp
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: Email address used to receive OTP
+ *           example: "john.doe@example.com"
+ *         otp:
+ *           type: string
+ *           description: One-time password code sent to email
+ *           example: "123456"
+ *
+ *     ResetPasswordRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - newPassword
+ *         - passwordConfirmation
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: Email address of the user
+ *           example: "john.doe@example.com"
+ *         newPassword:
+ *           type: string
+ *           format: password
+ *           minLength: 8
+ *           description: New password (minimum 8 characters)
+ *           example: "NewSecurePass123!"
+ *         passwordConfirmation:
+ *           type: string
+ *           format: password
+ *           description: Password confirmation (must match newPassword)
+ *           example: "NewSecurePass123!"
+ *
  *     User:
  *       type: object
  *       properties:
@@ -133,6 +184,20 @@
  *           format: date-time
  *           example: "2026-02-03T02:02:05.816Z"
  *       description: Authentication tokens are set as HttpOnly cookies (accessToken and refreshToken)
+ *
+ *     GenericSuccessResponse:
+ *       type: object
+ *       properties:
+ *         statusCode:
+ *           type: integer
+ *           example: 200
+ *         message:
+ *           type: string
+ *           example: "Operation completed successfully"
+ *         timestamp:
+ *           type: string
+ *           format: date-time
+ *           example: "2026-02-03T02:02:05.816Z"
  *
  *     SignUpResponse:
  *       type: object
