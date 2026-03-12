@@ -20,4 +20,5 @@ export const AUTH_MESSAGES = {
   INVALID_OTP: 'Mã OTP không hợp lệ hoặc đã hết hạn',
   OTP_VERIFIED_SUCCESSFULLY: 'Xác thực OTP thành công',
   PASSWORD_RESET_SUCCESSFULLY: 'Đặt lại mật khẩu thành công',
+  INVALID_EMAIL: 'Email không hợp lệ!',
 } as const;
