@@ -113,7 +113,9 @@ const authService = {
   forgotPassword: async (email: string) => {
     const user = await userRepository.findByEmail(email);
 
-    if (!user) return;
+    if (!user) {
+      throw new BadRequestError(AUTH_MESSAGES.INVALID_EMAIL);
+    }
 
     const cooldownKey = `fp:cooldown:${email}`;
     const otpKey = `fp:otp:${email}`;
