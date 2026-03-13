@@ -14,4 +14,6 @@ export const ORDERS_MESSAGES = {
   SIMILAR_STORES_NOT_FOUND: 'Không tìm thấy cửa hàng nào có sản phẩm tương tự',
   ROOT_ORDER_NOT_FOUND: 'Đơn hàng nguồn không tồn tại',
   STORE_NOT_FOUND: 'Cửa hàng được chọn không tồn tại',
+  CART_NOT_FOUND: 'Không tìm thấy giỏ hàng',
+  ADD_ITEM_SUCCESS: 'Thêm sản phẩm vào giỏ hàng thành công',
 };

@@ -9,7 +9,10 @@ import {
   updateOrderItemQuantity,
   repurchaseOrder,
   repurchaseToCart,
+  createOrder,
+  addOrderItem,
 } from './orders.controller.js';
+
 import { validate } from '@/middlewares/validate.middleware.js';
 import {
   scanProductSchema,
@@ -41,6 +44,10 @@ router.get('/:orderId/items', validate(getOrderItemsSchema), getOrderItems);
 
 router.delete('/:orderId/items/:itemId', deleteOrderItem);
 
+router.post('/:orderId/items', addOrderItem);
+
 router.patch('/:orderId/items/:itemId', updateOrderItemQuantity);
+
+router.post('/', createOrder);
 
 export default router;

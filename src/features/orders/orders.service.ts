@@ -570,6 +570,55 @@ export const ordersService = {
       })),
     }));
   },
+
+  createOrder: async (userId: string, storeId: string) => {
+    await orderRepository.clearPendingCartsByConsumer(userId);
+    return orderRepository.create({
+      consumerId: userId,
+      storeId,
+      orderType: 'DELIVERY',
+      status: 'PENDING',
+      totalAmount: 0,
+    });
+  },
+
+  addOrderItem: async (
+    userId: string,
+    orderId: string,
+    productId: string,
+    quantity: number
+  ) => {
+    const order = await orderRepository.findPendingCartById(userId, orderId);
+    if (!order) throw new BadRequestError(ORDERS_MESSAGES.CART_NOT_FOUND);
+
+    const product = await orderRepository.findProductById(productId);
+    if (!product) throw new BadRequestError(ORDERS_MESSAGES.PRODUCT_NOT_FOUND);
+    if (product.stockQuantity < quantity)
+      throw new BadRequestError(ORDERS_MESSAGES.EXCEED_STOCK);
+    const existingItem = await orderRepository.findOrderItem(
+      orderId,
+      productId
+    );
+    let item;
+    if (existingItem) {
+      item = await orderRepository.updateOrderItemQuantity(
+        existingItem.id,
+        existingItem.quantity + quantity
+      );
+    } else {
+      item = await orderRepository.createOrderItemWithQuantity(
+        orderId,
+        productId,
+        Number(product.discountingPrice ?? product.originalPrice),
+        quantity
+      );
+    }
+    await orderRepository.decreaseProductStock(productId, quantity);
+    const items = await orderRepository.findOrderItems(orderId);
+    const total = calculateOrderTotal(items);
+    await orderRepository.updateOrderTotal(orderId, total);
+    return item;
+  },
 };
 
 export default ordersService;

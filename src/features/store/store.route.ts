@@ -22,6 +22,12 @@ storeScanRoutes.get(
 );
 
 storeScanRoutes.get(
+  '/:storeId/products',
+  authMiddleware,
+  storeScanController.getStoreProducts
+);
+
+storeScanRoutes.get(
   '/:storeId',
   authMiddleware,
   validate(storeDetailSchema),
