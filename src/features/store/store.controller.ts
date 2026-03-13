@@ -61,4 +61,17 @@ export const storeScanController = {
 
     return res.status(response.statusCode).json(response);
   }),
+
+  getStoreProducts: catchAsync(async (req: Request, res: Response) => {
+    const { storeId } = req.params;
+    if (!storeId || Array.isArray(storeId)) {
+      throw new BadRequestError('Store ID không hợp lệ');
+    }
+    const products = await (
+      await import('@/shared/repositories/product.repository.js')
+    ).default.findByStoreId(storeId);
+    return res.json(
+      ApiResponse.success('Lấy danh sách sản phẩm thành công', products)
+    );
+  }),
 };

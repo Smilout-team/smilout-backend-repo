@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { ordersService } from './orders.service.js';
 import { catchAsync } from '@/utils/catchAsync.js';
 import { ApiResponse } from '@/core/apiResponse.js';
+import { ORDERS_MESSAGES } from './orders.messages.js';
 
 export const getMyOrders = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
@@ -143,10 +144,6 @@ export const repurchaseToCart = catchAsync(
   async (req: Request, res: Response) => {
     const userId = req.user?.id;
 
-    if (!userId) {
-      throw new Error('User not authenticated');
-    }
-
     const result = await ordersService.repurchaseToCart(userId, req.body);
 
     const response = ApiResponse.success(
@@ -157,3 +154,37 @@ export const repurchaseToCart = catchAsync(
     return res.status(response.statusCode).json(response);
   }
 );
+
+export const addOrderItem = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const orderId = Array.isArray(req.params.orderId)
+    ? req.params.orderId[0]
+    : req.params.orderId;
+  const { productId, quantity } = req.body;
+  if (!userId || !orderId || !productId || !quantity) {
+    return res
+      .status(400)
+      .json({ message: 'Thiếu userId, orderId, productId hoặc quantity' });
+  }
+  const item = await ordersService.addOrderItem(
+    userId,
+    orderId,
+    productId,
+    quantity
+  );
+  const response = ApiResponse.created(ORDERS_MESSAGES.ADD_ITEM_SUCCESS, item);
+  return res.status(response.statusCode).json(response);
+});
+
+export const createOrder = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const { storeId } = req.body;
+  if (!userId || !storeId) {
+    return res.status(400).json({ message: 'Thiếu userId hoặc storeId' });
+  }
+  const order = await ordersService.createOrder(userId, storeId);
+  const response = ApiResponse.created('Tạo order thành công', {
+    id: order.id,
+  });
+  return res.status(response.statusCode).json(response);
+});

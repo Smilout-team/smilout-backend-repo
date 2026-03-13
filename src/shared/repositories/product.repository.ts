@@ -6,6 +6,25 @@ const productRepository = {
       where: { id, deletedAt: null },
     });
   },
+
+  findByStoreId: async (storeId: string) => {
+    return await prisma.product.findMany({
+      where: {
+        storeId,
+        deletedAt: null,
+        isAvailable: true,
+      },
+      orderBy: { name: 'asc' },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+  },
 };
 
 export default productRepository;
