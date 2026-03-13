@@ -168,7 +168,8 @@ const authService = {
     if (!user) {
       throw new BadRequestError('User not found');
     }
-    const { _passwordHash, ...userWithoutPassword } = user;
+    const { passwordHash, ...userWithoutPassword } = user;
+    const _passwordHash = passwordHash;
     return userWithoutPassword;
   },
 };
