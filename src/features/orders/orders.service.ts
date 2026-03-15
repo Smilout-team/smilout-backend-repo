@@ -1,5 +1,6 @@
-import { Prisma } from '../../../generated/prisma/index.js';
+import { Prisma, type Order } from '../../../generated/prisma/index.js';
 import orderRepository from '@/shared/repositories/order.repository.js';
+import fraudAlertRepository from '@/shared/repositories/fraudAlert.repository.js';
 import { ORDERS_MESSAGES } from './orders.messages.js';
 import type {
   ScanProductRequestDto,
@@ -618,6 +619,115 @@ export const ordersService = {
     const total = calculateOrderTotal(items);
     await orderRepository.updateOrderTotal(orderId, total);
     return item;
+  },
+
+  getTodayRevenueByStaff: async (userId: string) => {
+    const staff = await orderRepository.findStaffByUserId(userId);
+    if (!staff) throw new Error('Staff not found');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    const orders = await orderRepository.findOrdersByStore(staff.storeId);
+    const todayOrders = orders.filter(
+      (o: any) =>
+        (o.status === 'PAID' && o.orderType === 'INSTORE') ||
+        (o.status === 'COMPLETED' &&
+          o.orderType === 'DELIVERY' &&
+          new Date(o.createdAt) >= today &&
+          new Date(o.createdAt) < tomorrow)
+    );
+
+    const yesterdayOrders = orders.filter(
+      (o: any) =>
+        (o.status === 'PAID' && o.orderType === 'INSTORE') ||
+        (o.status === 'COMPLETED' &&
+          o.orderType === 'DELIVERY' &&
+          new Date(o.createdAt) >= yesterday &&
+          new Date(o.createdAt) < today)
+    );
+    const todayTotal = todayOrders.reduce(
+      (sum: number, o: any) => sum + Number(o.totalAmount),
+      0
+    );
+    const yesterdayTotal = yesterdayOrders.reduce(
+      (sum: number, o: any) => sum + Number(o.totalAmount),
+      0
+    );
+    const compareToYesterday: number =
+      ((todayTotal - yesterdayTotal) / (yesterdayTotal || 1)) * 100;
+    return { total: todayTotal, compareToYesterday: compareToYesterday };
+  },
+
+  getCurrentCustomerCount: async (userId: string) => {
+    const staff = await orderRepository.findStaffByUserId(userId);
+    if (!staff) throw new Error('Staff not found');
+    const orders = await orderRepository.findOrdersByStore(staff.storeId);
+    const count = orders.filter(
+      (o: any) =>
+        o.orderType === 'INSTORE' && ['PENDING', 'PAID'].includes(o.status)
+    ).length;
+    return { count };
+  },
+
+  getActiveFraudAlertCount: async (userId: string) => {
+    const staff = await orderRepository.findStaffByUserId(userId);
+    if (!staff) throw new Error('Staff not found');
+    const count = await fraudAlertRepository.countActiveByStore(staff.storeId);
+    return { count };
+  },
+
+  getCompletedOrderCount: async (userId: string) => {
+    const staff = await orderRepository.findStaffByUserId(userId);
+    if (!staff) throw new Error('Staff not found');
+    const orders = await orderRepository.findOrdersByStore(staff.storeId);
+    const count = orders.filter((o: Order) => o.status === 'COMPLETED').length;
+    return { count };
+  },
+
+  getRecentActivities: async (userId: string) => {
+    const staff = await orderRepository.findStaffByUserId(userId);
+    if (!staff) throw new Error('Staff not found');
+    const orders = await orderRepository.findOrdersByStore(staff.storeId);
+    const activities = orders
+      .sort((a: any, b: any) => {
+        const aTime =
+          typeof a.createdAt === 'string'
+            ? Date.parse(a.createdAt)
+            : (a.createdAt?.getTime?.() ?? 0);
+        const bTime =
+          typeof b.createdAt === 'string'
+            ? Date.parse(b.createdAt)
+            : (b.createdAt?.getTime?.() ?? 0);
+        return bTime - aTime;
+      })
+      .slice(0, 10)
+      .map((o: any) => ({
+        id: o.id,
+        type:
+          o.status === 'PAID'
+            ? 'success'
+            : o.status === 'PENDING'
+              ? 'order'
+              : 'other',
+        name: o.consumer?.name || 'Khách',
+        description: `Đơn hàng #${o.id} - ${o.status}`,
+        time: o.createdAt,
+      }));
+    return { activities };
+  },
+
+  getPendingDeliveryOrderCount: async (userId: string) => {
+    const staff = await orderRepository.findStaffByUserId(userId);
+    if (!staff) throw new Error('Staff not found');
+    const orders = await orderRepository.findOrdersByStore(staff.storeId);
+    const count = orders.filter(
+      (o: Order) => o.status === 'PAID' && o.orderType === 'DELIVERY'
+    ).length;
+    return { count };
   },
 };
 

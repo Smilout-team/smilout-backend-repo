@@ -188,3 +188,51 @@ export const createOrder = catchAsync(async (req: Request, res: Response) => {
   });
   return res.status(response.statusCode).json(response);
 });
+
+export const getTodayRevenueByStaff = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getTodayRevenueByStaff(userId);
+  return res.json(
+    ApiResponse.success('Lấy doanh thu hôm nay thành công', data)
+  );
+});
+
+export const getCurrentCustomerCount = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getCurrentCustomerCount(userId);
+  return res.json(
+    ApiResponse.success('Lấy số khách hiện tại thành công', data)
+  );
+});
+
+export const getActiveFraudAlertCount = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getActiveFraudAlertCount(userId);
+  return res.json(
+    ApiResponse.success('Lấy số cảnh báo gian lận thành công', data)
+  );
+});
+
+export const getCompletedOrderCount = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getCompletedOrderCount(userId);
+  return res.json(
+    ApiResponse.success('Lấy số đơn hoàn thành thành công', data)
+  );
+});
+
+export const getRecentActivities = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getRecentActivities(userId);
+  return res.json(
+    ApiResponse.success('Lấy hoạt động gần đây thành công', data)
+  );
+});
+
+export const getPendingDeliveryOrderCount = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getPendingDeliveryOrderCount(userId);
+  return res.json(
+    ApiResponse.success('Lấy số đơn hàng chờ giao thành công', data)
+  );
+});
