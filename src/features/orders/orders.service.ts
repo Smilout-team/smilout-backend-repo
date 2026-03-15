@@ -573,7 +573,16 @@ export const ordersService = {
   },
 
   createOrder: async (userId: string, storeId: string) => {
-    await orderRepository.clearPendingCartsByConsumer(userId);
+    const existingOrder = await orderRepository.findPendingCartByStore(
+      userId,
+      storeId
+    );
+    console.log('Existing order:', existingOrder);
+
+    if (existingOrder) {
+      return existingOrder;
+    }
+
     return orderRepository.create({
       consumerId: userId,
       storeId,

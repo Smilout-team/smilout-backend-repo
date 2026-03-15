@@ -70,6 +70,17 @@ const orderRepository = {
     });
   },
 
+  findPendingCartByStore(consumerId: string, storeId: string) {
+    return prisma.order.findFirst({
+      where: {
+        storeId,
+        consumerId,
+        status: 'PENDING',
+        deletedAt: null,
+      },
+    });
+  },
+
   clearPendingCartsByConsumer(consumerId: string) {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const pendingOrders = await tx.order.findMany({
