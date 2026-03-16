@@ -7,7 +7,7 @@ import { NotFoundError } from './core/apiError.js';
 import cors from 'cors';
 
 const corsOptions = {
-  origin: ['http://localhost:5173'],
+  origin: ['http://localhost:5173', 'https://smilout.dev'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
