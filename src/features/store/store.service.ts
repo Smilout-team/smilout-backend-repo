@@ -15,13 +15,11 @@ const storeScanService = {
     storeId: string,
     consumerId: string
   ): Promise<ScanStoreResponse> => {
+    await orderRepository.clearPendingCartsByConsumer(consumerId);
     const activeCart = await orderRepository.findActiveCart(consumerId);
 
     if (activeCart) {
-      if (
-        activeCart.storeId === storeId &&
-        activeCart.orderType === 'INSTORE'
-      ) {
+      if (activeCart.storeId === storeId) {
         return {
           orderId: activeCart.id,
           storeId: activeCart.storeId,

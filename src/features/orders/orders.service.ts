@@ -666,8 +666,18 @@ export const ordersService = {
       (sum: number, o: any) => sum + Number(o.totalAmount),
       0
     );
-    const compareToYesterday: number =
-      ((todayTotal - yesterdayTotal) / (yesterdayTotal || 1)) * 100;
+
+    let compareToYesterday: number = 0;
+
+    if (yesterdayTotal > 0 && todayTotal > 0) {
+      compareToYesterday =
+        ((todayTotal - yesterdayTotal) / yesterdayTotal) * 100;
+    } else if (todayTotal > 0) {
+      compareToYesterday = 100;
+    } else if (yesterdayTotal > 0) {
+      compareToYesterday = -100;
+    }
+
     return { total: todayTotal, compareToYesterday: compareToYesterday };
   },
 
