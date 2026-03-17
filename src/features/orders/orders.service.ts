@@ -2,6 +2,7 @@ import { Prisma, type Order } from '../../../generated/prisma/index.js';
 import orderRepository from '@/shared/repositories/order.repository.js';
 import fraudAlertRepository from '@/shared/repositories/fraudAlert.repository.js';
 import { ORDERS_MESSAGES } from './orders.messages.js';
+import firestore from '@/shared/utils/firestore.util.js';
 import type {
   ScanProductRequestDto,
   ScanProductResponseDto,
@@ -535,6 +536,14 @@ export const ordersService = {
       orderId,
       status as 'PENDING' | 'PREPARING' | 'PAID' | 'COMPLETED' | 'REJECTED'
     );
+
+    await firestore.collection('order_events').add({
+      type: 'order_update',
+      orderId,
+      status,
+      updatedBy: userId,
+      updatedAt: new Date().toISOString(),
+    });
   },
 
   getStaffOrders: async (userId: string) => {
@@ -577,7 +586,6 @@ export const ordersService = {
       userId,
       storeId
     );
-    console.log('Existing order:', existingOrder);
 
     if (existingOrder) {
       return existingOrder;
@@ -643,20 +651,18 @@ export const ordersService = {
     const orders = await orderRepository.findOrdersByStore(staff.storeId);
     const todayOrders = orders.filter(
       (o: any) =>
-        (o.status === 'PAID' && o.orderType === 'INSTORE') ||
-        (o.status === 'COMPLETED' &&
-          o.orderType === 'DELIVERY' &&
-          new Date(o.createdAt) >= today &&
-          new Date(o.createdAt) < tomorrow)
+        (o.status === 'PAID' ||
+          (o.status === 'COMPLETED' && o.orderType !== 'DELIVERY')) &&
+        new Date(o.createdAt) >= today &&
+        new Date(o.createdAt) < tomorrow
     );
 
     const yesterdayOrders = orders.filter(
       (o: any) =>
-        (o.status === 'PAID' && o.orderType === 'INSTORE') ||
-        (o.status === 'COMPLETED' &&
-          o.orderType === 'DELIVERY' &&
-          new Date(o.createdAt) >= yesterday &&
-          new Date(o.createdAt) < today)
+        (o.status === 'PAID' ||
+          (o.status === 'COMPLETED' && o.orderType !== 'DELIVERY')) &&
+        new Date(o.createdAt) >= yesterday &&
+        new Date(o.createdAt) < today
     );
     const todayTotal = todayOrders.reduce(
       (sum: number, o: any) => sum + Number(o.totalAmount),
@@ -686,8 +692,7 @@ export const ordersService = {
     if (!staff) throw new Error('Staff not found');
     const orders = await orderRepository.findOrdersByStore(staff.storeId);
     const count = orders.filter(
-      (o: any) =>
-        o.orderType === 'INSTORE' && ['PENDING', 'PAID'].includes(o.status)
+      (o: any) => o.orderType === 'INSTORE' && o.status === 'PENDING'
     ).length;
     return { count };
   },

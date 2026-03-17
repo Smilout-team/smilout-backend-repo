@@ -15,6 +15,11 @@ export const processPaymentSchema = z.object({
         .string()
         .datetime('Thời gian hẹn giao không hợp lệ')
         .optional(),
+      deliveryPhoneNumber: z
+        .string()
+        .trim()
+        .min(10, 'Số điện thoại không hợp lệ')
+        .max(15, 'Số điện thoại không hợp lệ'),
       userLatitude: z.number().min(-90).max(90).optional(),
       userLongitude: z.number().min(-180).max(180).optional(),
     })

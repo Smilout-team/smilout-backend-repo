@@ -71,12 +71,42 @@ export async function searchAddressWithGoong(
       }>;
     };
 
-    const predictions = data.predictions ?? [];
+    const predictions =
+      data.predictions?.filter((prediction: any) => {
+        const types = prediction.types ?? [];
+        return (
+          types.includes('restaurant') ||
+          types.includes('motel') ||
+          types.includes('hotel') ||
+          types.includes('grocery_store') ||
+          types.includes('house_number') ||
+          types.includes('college') ||
+          types.includes('university') ||
+          types.includes('vocational_training') ||
+          types.includes('point_of_interest') ||
+          types.includes('building') ||
+          types.includes('commercial_center') ||
+          types.includes('cinama') ||
+          types.includes('cafe') ||
+          types.includes('spa') ||
+          types.includes('station') ||
+          types.includes('site') ||
+          types.includes('park') ||
+          types.includes('hospital') ||
+          types.includes('clinic') ||
+          types.includes('atm') ||
+          types.includes('bank') ||
+          types.includes('bar') ||
+          types.includes('airport_ticket_agency') ||
+          types.includes('museum') ||
+          types.includes('market')
+        );
+      }) ?? [];
 
     const detailedLocations = await Promise.all(
       predictions.slice(0, 6).map(async (prediction) => {
         const placeId =
-          prediction.place_id ?? prediction.description ?? 'unknown';
+          prediction.place_id ?? prediction.description ?? 'Không xác định';
         const location = await getPlaceDetailWithGoong(placeId, mapKey);
 
         return {

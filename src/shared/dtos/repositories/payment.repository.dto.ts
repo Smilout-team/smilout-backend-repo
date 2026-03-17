@@ -3,6 +3,7 @@ export interface CreatePaymentDto {
   userLatitude?: number;
   userLongitude?: number;
   deliveryAddress?: string;
+  deliveryPhoneNumber?: string;
   deliveryOption?: 'ASAP' | 'SCHEDULED';
   scheduledDeliveryAt?: string;
 }

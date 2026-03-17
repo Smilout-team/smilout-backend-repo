@@ -19,6 +19,8 @@ import {
   searchAddressWithGoong,
 } from './utils/goong.util.js';
 
+import firestore from '@/shared/utils/firestore.util.js';
+
 export const paymentService = {
   getDeliveryAddressOptions: async (
     userId: string,
@@ -179,8 +181,27 @@ export const paymentService = {
       deliveryAddress: data.deliveryAddress,
       deliveryOption,
       scheduledDeliveryAt,
+      deliveryPhoneNumber: data.deliveryPhoneNumber,
       insufficientBalanceMessage: PAYMENT_MESSAGES.INSUFFICIENT_BALANCE,
       invalidOrderMessage: PAYMENT_MESSAGES.INVALID_OR_PAID_ORDER,
+    });
+
+    const newOrder = await orderRepository.findNewOrderByStore(
+      paidOrder.storeId
+    );
+
+    newOrder.orderItems = newOrder.orderItems.map((item: any) => ({
+      ...item,
+      priceAtPurchase: Number(item.priceAtPurchase),
+    }));
+
+    await firestore.collection('order_events').add({
+      type: 'order_new',
+      order: {
+        ...newOrder,
+        totalAmount: Number(newOrder.totalAmount),
+        createdAt: newOrder.createdAt.toISOString(),
+      },
     });
 
     return {
