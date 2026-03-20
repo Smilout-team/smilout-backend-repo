@@ -2,15 +2,13 @@ import type { Request, Response } from 'express';
 import { catchAsync } from '@/utils/catchAsync.js';
 import authService from './auth.service.js';
 import { ApiResponse } from '@/core/apiResponse.js';
-import { statusCodes } from '@/core/statusCode.constant.js';
 import { setTokenCookie } from '@/utils/token.util.js';
 import { AUTH_MESSAGES } from './auth.messages.js';
 
 export const authController = {
   signUpWithEmail: catchAsync(async (req: Request, res: Response) => {
     const user = await authService.signUpWithEmail(req.body);
-    const response = new ApiResponse(
-      statusCodes.CREATED,
+    const response = ApiResponse.created(
       AUTH_MESSAGES.USER_REGISTERED_SUCCESSFULLY,
       { id: user.id, email: user.email, name: user.name }
     );
@@ -32,8 +30,7 @@ export const authController = {
 
     setTokenCookie(res, tokens);
 
-    const response = new ApiResponse(
-      statusCodes.SUCCESS,
+    const response = ApiResponse.success(
       AUTH_MESSAGES.SUCCESSFUL_EMAIL_AUTHENTICATION
     );
     return res.status(response.statusCode).json(response);
@@ -53,9 +50,41 @@ export const authController = {
     });
 
     setTokenCookie(res, tokens);
-    const response = new ApiResponse(
-      statusCodes.SUCCESS,
+    const response = ApiResponse.success(
       AUTH_MESSAGES.SUCCESSFUL_GOOGLE_AUTHENTICATION
+    );
+    return res.status(response.statusCode).json(response);
+  }),
+
+  forgotPassword: catchAsync(async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    await authService.forgotPassword(email);
+
+    const response = ApiResponse.success(
+      AUTH_MESSAGES.OTP_SENT_IF_EMAIL_EXISTS
+    );
+    return res.status(response.statusCode).json(response);
+  }),
+
+  verifyResetOtp: catchAsync(async (req: Request, res: Response) => {
+    const { email, otp } = req.body;
+
+    await authService.verifyResetOtp(email, otp);
+
+    const response = ApiResponse.success(
+      AUTH_MESSAGES.OTP_VERIFIED_SUCCESSFULLY
+    );
+    return res.status(response.statusCode).json(response);
+  }),
+
+  resetPassword: catchAsync(async (req: Request, res: Response) => {
+    const { email, newPassword } = req.body;
+
+    await authService.resetPassword(email, newPassword);
+
+    const response = ApiResponse.success(
+      AUTH_MESSAGES.PASSWORD_RESET_SUCCESSFULLY
     );
     return res.status(response.statusCode).json(response);
   }),
@@ -66,8 +95,7 @@ export const authController = {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
-    const apiResponse = new ApiResponse(
-      statusCodes.SUCCESS,
+    const apiResponse = ApiResponse.success(
       AUTH_MESSAGES.USER_SIGNED_OUT_SUCCESSFULLY
     );
     return res.status(apiResponse.statusCode).json(apiResponse);
@@ -75,8 +103,7 @@ export const authController = {
 
   getProfile: catchAsync(async (req: Request, res: Response) => {
     const user = await authService.getProfile(req.user.id);
-    const response = new ApiResponse(
-      statusCodes.SUCCESS,
+    const response = ApiResponse.success(
       AUTH_MESSAGES.USER_PROFILE_RETRIEVED_SUCCESSFULLY,
       user
     );

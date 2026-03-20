@@ -1,0 +1,238 @@
+import type { Request, Response } from 'express';
+import { ordersService } from './orders.service.js';
+import { catchAsync } from '@/utils/catchAsync.js';
+import { ApiResponse } from '@/core/apiResponse.js';
+import { ORDERS_MESSAGES } from './orders.messages.js';
+
+export const getMyOrders = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+
+  const orders = await ordersService.getMyOrders(userId);
+
+  const response = ApiResponse.success(
+    'Lấy lịch sử đơn hàng thành công',
+    orders
+  );
+
+  return res.status(response.statusCode).json(response);
+});
+
+export const getStaffOrders = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const orders = await ordersService.getStaffOrders(userId);
+
+    const response = ApiResponse.success(
+      'Lấy danh sách đơn hàng thành công',
+      orders
+    );
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const updateOrderStatus = catchAsync(
+  async (req: Request, res: Response) => {
+    const orderId = Array.isArray(req.params.orderId)
+      ? req.params.orderId[0]
+      : req.params.orderId;
+    const { status } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    await ordersService.updateOrderStatus(userId, orderId, status);
+
+    const response = ApiResponse.success(
+      'Cập nhật trạng thái đơn hàng thành công',
+      null
+    );
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const scanProduct = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+
+  const result = await ordersService.scanProduct(userId, req.body);
+
+  return res.json(result);
+});
+
+export const getOrderItems = catchAsync(async (req: Request, res: Response) => {
+  const orderId = Array.isArray(req.params.orderId)
+    ? req.params.orderId[0]
+    : req.params.orderId;
+
+  const items = await ordersService.getOrderItems(orderId);
+
+  const response = ApiResponse.success(
+    'Lấy danh sách sản phẩm thành công',
+    items
+  );
+
+  return res.status(response.statusCode).json(response);
+});
+
+export const deleteOrderItem = catchAsync(
+  async (req: Request, res: Response) => {
+    const orderId = Array.isArray(req.params.orderId)
+      ? req.params.orderId[0]
+      : req.params.orderId;
+    const itemId = Array.isArray(req.params.itemId)
+      ? req.params.itemId[0]
+      : req.params.itemId;
+
+    const result = await ordersService.deleteOrderItem(orderId, itemId);
+
+    const response = ApiResponse.success(result.message, null);
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const updateOrderItemQuantity = catchAsync(
+  async (req: Request, res: Response) => {
+    const orderId = Array.isArray(req.params.orderId)
+      ? req.params.orderId[0]
+      : req.params.orderId;
+    const itemId = Array.isArray(req.params.itemId)
+      ? req.params.itemId[0]
+      : req.params.itemId;
+    const { quantity } = req.body;
+
+    const result = await ordersService.updateOrderItemQuantity(
+      orderId,
+      itemId,
+      quantity
+    );
+
+    const response = ApiResponse.success(result.message, result.updatedItem);
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const repurchaseOrder = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const result = await ordersService.repurchaseOrder(userId, req.body);
+
+    const response = ApiResponse.success(
+      'Tìm cửa hàng đề xuất thành công',
+      result
+    );
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const repurchaseToCart = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    const result = await ordersService.repurchaseToCart(userId, req.body);
+
+    const response = ApiResponse.success(
+      'Tạo giỏ hàng mua lại thành công',
+      result
+    );
+
+    return res.status(response.statusCode).json(response);
+  }
+);
+
+export const addOrderItem = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const orderId = Array.isArray(req.params.orderId)
+    ? req.params.orderId[0]
+    : req.params.orderId;
+  const { productId, quantity } = req.body;
+  if (!userId || !orderId || !productId || !quantity) {
+    return res
+      .status(400)
+      .json({ message: 'Thiếu userId, orderId, productId hoặc quantity' });
+  }
+  const item = await ordersService.addOrderItem(
+    userId,
+    orderId,
+    productId,
+    quantity
+  );
+  const response = ApiResponse.created(ORDERS_MESSAGES.ADD_ITEM_SUCCESS, item);
+  return res.status(response.statusCode).json(response);
+});
+
+export const createOrder = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const { storeId } = req.body;
+  if (!userId || !storeId) {
+    return res.status(400).json({ message: 'Thiếu userId hoặc storeId' });
+  }
+  const order = await ordersService.createOrder(userId, storeId);
+  const response = ApiResponse.created('Tạo order thành công', {
+    id: order.id,
+  });
+  return res.status(response.statusCode).json(response);
+});
+
+export const getTodayRevenueByStaff = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getTodayRevenueByStaff(userId);
+  return res.json(
+    ApiResponse.success('Lấy doanh thu hôm nay thành công', data)
+  );
+});
+
+export const getCurrentCustomerCount = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getCurrentCustomerCount(userId);
+  return res.json(
+    ApiResponse.success('Lấy số khách hiện tại thành công', data)
+  );
+});
+
+export const getActiveFraudAlertCount = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getActiveFraudAlertCount(userId);
+  return res.json(
+    ApiResponse.success('Lấy số cảnh báo gian lận thành công', data)
+  );
+});
+
+export const getCompletedOrderCount = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getCompletedOrderCount(userId);
+  return res.json(
+    ApiResponse.success('Lấy số đơn hoàn thành thành công', data)
+  );
+});
+
+export const getRecentActivities = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getRecentActivities(userId);
+  return res.json(
+    ApiResponse.success('Lấy hoạt động gần đây thành công', data)
+  );
+});
+
+export const getPendingDeliveryOrderCount = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const data = await ordersService.getPendingDeliveryOrderCount(userId);
+  return res.json(
+    ApiResponse.success('Lấy số đơn hàng chờ giao thành công', data)
+  );
+});

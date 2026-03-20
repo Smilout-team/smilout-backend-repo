@@ -3,6 +3,7 @@ export interface AuthRequestDto {
   email: string;
   password: string;
   passwordConfirmation?: string;
+  phoneNumber: string;
   ipAddress?: string;
   userAgent?: string;
 }

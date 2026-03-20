@@ -4,7 +4,7 @@ import type {
   UpdateUserParams,
 } from '@/shared/dtos/repositories/user.repository.dto.js';
 import { prisma } from '@/utils/prisma.js';
-import type { Prisma } from 'generated/prisma/index.js';
+import type { Prisma } from '../../../generated/prisma/index.js';
 
 const userRepository = {
   findByEmail: async (email: string) => {
@@ -12,7 +12,29 @@ const userRepository = {
   },
 
   findById: async (id: string) => {
-    return await prisma.user.findUnique({ where: { id, deletedAt: null } });
+    const user = await prisma.user.findUnique({
+      where: { id, deletedAt: null },
+    });
+    if (!user) return null;
+
+    if (user.roles.includes('STORE_STAFF')) {
+      const store_staff = await prisma.storeStaff.findMany({
+        where: { userId: user.id, deletedAt: null },
+      });
+      if (!store_staff) return user;
+
+      const store = await prisma.store.findMany({
+        where: { id: store_staff[0].storeId, deletedAt: null },
+      });
+      return { ...user, store: store[0] };
+    }
+    return user;
+  },
+
+  findByPhoneNumber: async (phoneNumber: string) => {
+    return await prisma.user.findFirst({
+      where: { phoneNumber, deletedAt: null },
+    });
   },
 
   create: async (data: CreateUserParams) => {
@@ -20,6 +42,7 @@ const userRepository = {
       data: {
         name: data.name,
         email: data.email,
+        phoneNumber: data.phoneNumber,
         passwordHash: data.passwordHash,
       },
     });

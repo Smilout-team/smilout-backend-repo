@@ -1,10 +1,24 @@
 import { Router } from 'express';
 import authRoutes from '@/features/auth/auth.route.js';
+import walletRoutes from '@/features/wallet/wallet.route.js';
+import walletPublicRoutes from '@/features/wallet/wallet.public.route.js';
+import storeRoutes from '@/features/store/store.route.js';
+import ordersRoutes from '@/features/orders/orders.routes.js';
+import paymentRoutes from '@/features/payment/payment.route.js';
 
-const authRoute = Router();
+const publicRoute = Router();
 
-authRoute.use('/', authRoutes);
+publicRoute.use('/auth', authRoutes);
+publicRoute.use('/wallet', walletPublicRoutes);
 
 const protectedRoute = Router();
 
-export { authRoute, protectedRoute };
+protectedRoute.use('/orders', ordersRoutes);
+
+protectedRoute.use('/stores', storeRoutes);
+
+protectedRoute.use('/wallet', walletRoutes);
+
+protectedRoute.use('/payment', paymentRoutes);
+
+export { publicRoute, protectedRoute };

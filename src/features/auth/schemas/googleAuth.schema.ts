@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const googleAuthSchema = z.object({
   body: z.object({
-    authCode: z.string().min(1, 'Authorization code is required'),
+    authCode: z.string().min(1, 'Mã xác thực Google không được để trống'),
   }),
 });
 
