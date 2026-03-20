@@ -659,8 +659,8 @@ export const ordersService = {
 
     const yesterdayOrders = orders.filter(
       (o: any) =>
-        (o.status === 'PAID' ||
-          (o.status === 'COMPLETED' && o.orderType !== 'DELIVERY')) &&
+        ((o.status === 'PAID' && o.orderType === 'INSTORE') ||
+          o.orderType !== 'DELIVERY') &&
         new Date(o.createdAt) >= yesterday &&
         new Date(o.createdAt) < today
     );
