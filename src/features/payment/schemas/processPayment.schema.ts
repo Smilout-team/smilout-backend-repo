@@ -19,7 +19,8 @@ export const processPaymentSchema = z.object({
         .string()
         .trim()
         .min(10, 'Số điện thoại không hợp lệ')
-        .max(15, 'Số điện thoại không hợp lệ'),
+        .max(15, 'Số điện thoại không hợp lệ')
+        .optional(),
       userLatitude: z.number().min(-90).max(90).optional(),
       userLongitude: z.number().min(-180).max(180).optional(),
     })
