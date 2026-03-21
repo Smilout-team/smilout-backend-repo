@@ -18,7 +18,6 @@ enum TransactionType {
   DEPOSIT
   PURCHASE
   REFUND
-  SUBSCRIPTION_PAYMENT
 }
 
 enum TopUpStatus {
@@ -51,17 +50,6 @@ enum UserRole {
   STORE_STAFF
   STORE_OWNER
   SYSTEM_ADMIN
-}
-
-enum SubscriptionPlanName {
-  STANDARD
-  PLUS
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  EXPIRED
-  CANCELLED
 }
 
 enum FraudAlertStatus {
@@ -97,7 +85,6 @@ model User {
   orders               Order[]
   ownedStores         Store[]               @relation("StoreOwner")
   storeStaff          StoreStaff[]
-  notifications        Notification[]
 
   @@map("users")
 }
@@ -227,7 +214,6 @@ model Store {
   devices               Device[]
   products              Product[]
   orders                Order[]
-  storeSubscriptions   StoreSubscription[]
   fraudAlerts          FraudAlert[]
 
   @@map("stores")
@@ -314,39 +300,6 @@ model OrderItem {
   @@map("order_items")
 }
 
-model SubscriptionPlan {
-  id            String                 @id @default(uuid()) @db.Uuid
-  name          SubscriptionPlanName
-  price         Decimal                @db.Decimal(10, 2)
-  durationDays Int                    @map("duration_days") @db.Integer
-  features      Json?                  @db.Json
-  createdAt    DateTime               @map("created_at") @default(now()) @db.Timestamp(6)
-  updatedAt    DateTime               @map("updated_at") @updatedAt @db.Timestamp(6)
-  deletedAt    DateTime?              @map("deleted_at") @db.Timestamp(6)
-  // Relations
-  storeSubscriptions StoreSubscription[]
-
-  @@map("subscription_plans")
-}
-
-model StoreSubscription {
-  id        String             @id @default(uuid()) @db.Uuid
-  storeId  String             @map("store_id") @db.Uuid
-  planId   String             @map("plan_id") @db.Uuid
-  startDay DateTime           @map("start_day") @db.Timestamp(6)
-  endDay   DateTime           @map("end_day") @db.Timestamp(6)
-  status    SubscriptionStatus @default(ACTIVE)
-  createdAt DateTime          @map("created_at") @default(now()) @db.Timestamp(6)
-  updatedAt DateTime          @map("updated_at") @updatedAt @db.Timestamp(6)
-  deletedAt DateTime?         @map("deleted_at") @db.Timestamp(6)
-
-  // Relations
-  store Store            @relation(fields: [storeId], references: [id])
-  plan  SubscriptionPlan @relation(fields: [planId], references: [id])
-
-  @@map("store_subscriptions")
-}
-
 model FraudAlert {
   id               String           @id @default(uuid()) @db.Uuid
   storeId         String           @map("store_id") @db.Uuid
@@ -362,22 +315,4 @@ model FraudAlert {
   store Store @relation(fields: [storeId], references: [id])
 
   @@map("fraud_alerts")
-}
-
-model Notification {
-  id              String    @id @default(uuid()) @db.Uuid
-  receiverId     String    @map("receiver_id") @db.Uuid
-  title           String    @db.VarChar(255)
-  body            String?   @db.Text
-  isRead         Boolean   @map("is_read") @default(false)
-  targetDetails  String?   @map("target_details") @db.Text
-  referenceId    String    @map("reference_id") @db.Uuid
-  createdAt      DateTime  @map("created_at") @default(now()) @db.Timestamp(6)
-  updatedAt      DateTime  @map("updated_at") @updatedAt @db.Timestamp(6)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamp(6)
-
-  // Relations
-  receiver User @relation(fields: [receiverId], references: [id])
-
-  @@map("notifications")
 }

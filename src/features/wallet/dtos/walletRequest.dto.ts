@@ -7,5 +7,5 @@ export interface CreateTopUpCheckoutRequestDto {
 export interface GetTransactionHistoryQueryDto {
   page?: number;
   limit?: number;
-  transactionType?: 'DEPOSIT' | 'PURCHASE' | 'REFUND' | 'SUBSCRIPTION_PAYMENT';
+  transactionType?: 'DEPOSIT' | 'PURCHASE' | 'REFUND';
 }
