@@ -17,6 +17,7 @@ import {
   getCompletedOrderCount,
   getRecentActivities,
   getPendingDeliveryOrderCount,
+  getMyLatestOrder,
 } from './orders.controller.js';
 
 import { validate } from '@/middlewares/validate.middleware.js';
@@ -65,5 +66,7 @@ router.get(
   '/staff/orders/count/pending-delivery',
   getPendingDeliveryOrderCount
 );
+
+router.get('/me/latest', getMyLatestOrder);
 
 export default router;

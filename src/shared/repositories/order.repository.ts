@@ -563,6 +563,38 @@ const orderRepository = {
       data: { status },
     });
   },
+
+  findLatestOrderByConsumer(consumerId: string) {
+    return prisma.order.findFirst({
+      where: {
+        consumerId,
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        store: {
+          select: {
+            id: true,
+            storeName: true,
+            address: true,
+          },
+        },
+        orderItems: {
+          select: {
+            quantity: true,
+            priceAtPurchase: true,
+            product: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
 };
 
 export default orderRepository;

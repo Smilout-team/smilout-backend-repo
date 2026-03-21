@@ -236,3 +236,11 @@ export const getPendingDeliveryOrderCount = catchAsync(async (req, res) => {
     ApiResponse.success('Lấy số đơn hàng chờ giao thành công', data)
   );
 });
+
+export const getMyLatestOrder = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+  const order = await ordersService.getMyLatestOrder(userId);
+  return res.json(
+    ApiResponse.success('Lấy đơn hàng gần nhất thành công', order)
+  );
+});

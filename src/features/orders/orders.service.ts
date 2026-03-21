@@ -753,6 +753,39 @@ export const ordersService = {
     ).length;
     return { count };
   },
+
+  getMyLatestOrder: async (userId: string) => {
+    const order = await orderRepository.findLatestOrderByConsumer(userId);
+
+    if (!order) {
+      throw new BadRequestError(ORDERS_MESSAGES.ORDER_NOT_FOUND);
+    }
+
+    return {
+      id: order.id,
+      orderType: order.orderType,
+      status: order.status,
+      deliveryAddress: order.deliveryAddress,
+      deliveryOption: order.deliveryOption,
+      scheduledDeliveryAt: order.scheduledDeliveryAt,
+      createdAt: order.createdAt,
+      totalAmount: Number(order.totalAmount),
+      store: {
+        id: order.store.id,
+        storeName: order.store.storeName,
+        address: order.store.address,
+      },
+      totalItems: order.orderItems.reduce(
+        (sum: number, item: { quantity: number }) => sum + item.quantity,
+        0
+      ),
+      items: order.orderItems.map((item: any) => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        priceAtPurchase: Number(item.priceAtPurchase),
+      })),
+    };
+  },
 };
 
 export default ordersService;
