@@ -154,6 +154,15 @@ const authService = {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
+    const similarPassword = await bcrypt.compare(
+      newPassword,
+      user.passwordHash
+    );
+
+    if (similarPassword) {
+      throw new BadRequestError(AUTH_MESSAGES.NEW_PASSWORD_SAME_AS_OLD);
+    }
+
     await userRepository.updateById(user.id, {
       passwordHash: hashedPassword,
     });
