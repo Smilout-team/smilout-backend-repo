@@ -22,6 +22,8 @@ export default defineConfig(
       '.*.js',
       'coverage/**',
       '.package-lock.json',
+      'prisma.config.ts',
+      'prisma/seed.ts',
     ],
   },
 

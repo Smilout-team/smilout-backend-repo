@@ -563,6 +563,62 @@ const orderRepository = {
       data: { status },
     });
   },
+
+  findLatestOrderByConsumer(consumerId: string) {
+    return prisma.order.findFirst({
+      where: {
+        consumerId,
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        store: {
+          select: {
+            id: true,
+            storeName: true,
+            address: true,
+          },
+        },
+        orderItems: {
+          select: {
+            quantity: true,
+            priceAtPurchase: true,
+            product: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  findConsumersInStore(storeId: string) {
+    return prisma.order
+      .findMany({
+        where: {
+          storeId,
+          orderType: 'INSTORE',
+          status: 'PENDING',
+          deletedAt: null,
+        },
+        distinct: ['consumerId'],
+        select: {
+          consumer: {
+            select: {
+              id: true,
+              name: true,
+              phoneNumber: true,
+              createdAt: true,
+            },
+          },
+        },
+      })
+      .then((orders: any[]) => orders.map((order) => order.consumer));
+  },
 };
 
 export default orderRepository;

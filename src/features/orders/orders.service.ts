@@ -651,16 +651,16 @@ export const ordersService = {
     const orders = await orderRepository.findOrdersByStore(staff.storeId);
     const todayOrders = orders.filter(
       (o: any) =>
-        (o.status === 'PAID' ||
-          (o.status === 'COMPLETED' && o.orderType !== 'DELIVERY')) &&
+        ((o.status === 'PAID' && o.orderType === 'INSTORE') ||
+          o.orderType === 'DELIVERY') &&
         new Date(o.createdAt) >= today &&
         new Date(o.createdAt) < tomorrow
     );
 
     const yesterdayOrders = orders.filter(
       (o: any) =>
-        (o.status === 'PAID' ||
-          (o.status === 'COMPLETED' && o.orderType !== 'DELIVERY')) &&
+        ((o.status === 'PAID' && o.orderType === 'INSTORE') ||
+          o.orderType === 'DELIVERY') &&
         new Date(o.createdAt) >= yesterday &&
         new Date(o.createdAt) < today
     );
@@ -752,6 +752,39 @@ export const ordersService = {
       (o: Order) => o.status === 'PAID' && o.orderType === 'DELIVERY'
     ).length;
     return { count };
+  },
+
+  getMyLatestOrder: async (userId: string) => {
+    const order = await orderRepository.findLatestOrderByConsumer(userId);
+
+    if (!order) {
+      throw new BadRequestError(ORDERS_MESSAGES.ORDER_NOT_FOUND);
+    }
+
+    return {
+      id: order.id,
+      orderType: order.orderType,
+      status: order.status,
+      deliveryAddress: order.deliveryAddress,
+      deliveryOption: order.deliveryOption,
+      scheduledDeliveryAt: order.scheduledDeliveryAt,
+      createdAt: order.createdAt,
+      totalAmount: Number(order.totalAmount),
+      store: {
+        id: order.store.id,
+        storeName: order.store.storeName,
+        address: order.store.address,
+      },
+      totalItems: order.orderItems.reduce(
+        (sum: number, item: { quantity: number }) => sum + item.quantity,
+        0
+      ),
+      items: order.orderItems.map((item: any) => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        priceAtPurchase: Number(item.priceAtPurchase),
+      })),
+    };
   },
 };
 

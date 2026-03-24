@@ -21,4 +21,5 @@ export const AUTH_MESSAGES = {
   OTP_VERIFIED_SUCCESSFULLY: 'Xác thực OTP thành công',
   PASSWORD_RESET_SUCCESSFULLY: 'Đặt lại mật khẩu thành công',
   INVALID_EMAIL: 'Email không hợp lệ!',
+  NEW_PASSWORD_SAME_AS_OLD: 'Mật khẩu mới không được giống mật khẩu cũ!',
 } as const;
