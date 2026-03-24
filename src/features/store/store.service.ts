@@ -55,6 +55,10 @@ const storeScanService = {
     };
   },
 
+  exitStore: async (orderId: string): Promise<void> => {
+    await orderRepository.markOrderAsExited(orderId);
+  },
+
   getStoreDetail: async (storeId: string): Promise<StoreDetailResponse> => {
     const store = await storeRepository.findById(storeId);
 

@@ -486,7 +486,6 @@ const orderRepository = {
     return prisma.order.findMany({
       where: {
         storeId,
-        orderType: 'DELIVERY',
         status: {
           in: ['PENDING', 'PREPARING', 'PAID', 'COMPLETED', 'REJECTED'],
         },
@@ -607,6 +606,7 @@ const orderRepository = {
         },
         distinct: ['consumerId'],
         select: {
+          createdAt: true,
           consumer: {
             select: {
               id: true,
@@ -617,7 +617,19 @@ const orderRepository = {
           },
         },
       })
-      .then((orders: any[]) => orders.map((order) => order.consumer));
+      .then((orders: any[]) =>
+        orders.map((order) => {
+          return { consumer: order.consumer, timeStart: order.createdAt };
+        })
+      );
+  },
+  markOrderAsExited(orderId: string) {
+    return prisma.order.update({
+      where: { id: orderId },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
   },
 };
 

@@ -48,6 +48,46 @@
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/ScanStoreRequest'
+ *
+ * /stores/exit:
+ *   post:
+ *     tags: [Store Scan]
+ *     summary: Thoát khỏi cửa hàng (kết thúc phiên mua tại cửa hàng)
+ *     description: |
+ *       Kết thúc phiên mua tại cửa hàng, cập nhật trạng thái đơn hàng là exited.
+ *       Yêu cầu truyền orderId trong body.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *                 description: Mã đơn hàng cần thoát
+ *             required:
+ *               - orderId
+ *     responses:
+ *       200:
+ *         description: Thoát cửa hàng thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: "Thoát cửa hàng thành công"
+ *       400:
+ *         description: Đơn hàng không hợp lệ hoặc đã thoát
+ *       401:
+ *         description: Unauthorized
  *           examples:
  *             scanExample:
  *               summary: Scan store to create order

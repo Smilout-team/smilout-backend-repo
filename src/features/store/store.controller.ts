@@ -20,6 +20,18 @@ export const storeScanController = {
     return res.status(response.statusCode).json(response);
   }),
 
+  exitStore: catchAsync(async (req: Request, res: Response) => {
+    const { orderId } = req.body;
+
+    await storeScanService.exitStore(orderId);
+
+    const response = ApiResponse.success(
+      STORE_SCAN_MESSAGES.EXIT_STORE_SUCCESS
+    );
+
+    return res.status(response.statusCode).json(response);
+  }),
+
   getStoreDetail: catchAsync(async (req: Request, res: Response) => {
     const { storeId } = req.params;
 

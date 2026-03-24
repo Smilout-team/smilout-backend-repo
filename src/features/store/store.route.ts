@@ -34,6 +34,8 @@ storeScanRoutes.get(
   storeScanController.getStoreDetail
 );
 
+storeScanRoutes.post('/exit', authMiddleware, storeScanController.exitStore);
+
 storeScanRoutes.get(
   '/:storeId/consumers-in-store',
   authMiddleware,

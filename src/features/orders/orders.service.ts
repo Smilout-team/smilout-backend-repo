@@ -555,30 +555,32 @@ export const ordersService = {
 
     const orders = await orderRepository.findOrdersByStore(staffRecord.storeId);
 
-    return orders.map((order: any) => ({
-      id: order.id,
-      orderType: order.orderType,
-      status: order.status,
-      deliveryAddress: order.deliveryAddress,
-      deliveryPhoneNumber: order.deliveryPhoneNumber,
-      deliveryOption: order.deliveryOption,
-      scheduledDeliveryAt: order.scheduledDeliveryAt,
-      createdAt: order.createdAt,
-      totalAmount: Number(order.totalAmount),
-      consumer: {
-        id: order.consumer.id,
-        name: order.consumer.name,
-        phoneNumber: order.consumer.phoneNumber,
-      },
-      items: order.orderItems.map((item: any) => ({
-        id: item.id,
-        productId: item.productId,
-        productName: item.product.name,
-        quantity: item.quantity,
-        priceAtPurchase: Number(item.priceAtPurchase),
-        imageUrls: item.product.imageUrls,
-      })),
-    }));
+    return orders
+      .filter((order: any) => order.orderType === 'DELIVERY')
+      .map((order: any) => ({
+        id: order.id,
+        orderType: order.orderType,
+        status: order.status,
+        deliveryAddress: order.deliveryAddress,
+        deliveryPhoneNumber: order.deliveryPhoneNumber,
+        deliveryOption: order.deliveryOption,
+        scheduledDeliveryAt: order.scheduledDeliveryAt,
+        createdAt: order.createdAt,
+        totalAmount: Number(order.totalAmount),
+        consumer: {
+          id: order.consumer.id,
+          name: order.consumer.name,
+          phoneNumber: order.consumer.phoneNumber,
+        },
+        items: order.orderItems.map((item: any) => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.product.name,
+          quantity: item.quantity,
+          priceAtPurchase: Number(item.priceAtPurchase),
+          imageUrls: item.product.imageUrls,
+        })),
+      }));
   },
 
   createOrder: async (userId: string, storeId: string) => {
@@ -708,7 +710,9 @@ export const ordersService = {
     const staff = await orderRepository.findStaffByUserId(userId);
     if (!staff) throw new Error('Staff not found');
     const orders = await orderRepository.findOrdersByStore(staff.storeId);
-    const count = orders.filter((o: Order) => o.status === 'COMPLETED').length;
+    const count = orders.filter(
+      (o: Order) => o.status === 'COMPLETED' && o.orderType === 'DELIVERY'
+    ).length;
     return { count };
   },
 
@@ -729,6 +733,7 @@ export const ordersService = {
         return bTime - aTime;
       })
       .slice(0, 10)
+      .filter((o: any) => o.orderType === 'DELIVERY')
       .map((o: any) => ({
         id: o.id,
         type:
