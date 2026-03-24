@@ -116,6 +116,11 @@ const storeScanService = {
 
     return mapped;
   },
+
+  getConsumersInStore: async (storeId: string) => {
+    const consumers = await orderRepository.findConsumersInStore(storeId);
+    return consumers;
+  },
 };
 
 export default storeScanService;

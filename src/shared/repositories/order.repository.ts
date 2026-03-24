@@ -595,6 +595,30 @@ const orderRepository = {
       },
     });
   },
+
+  findConsumersInStore(storeId: string) {
+    return prisma.order
+      .findMany({
+        where: {
+          storeId,
+          orderType: 'INSTORE',
+          status: 'PENDING',
+          deletedAt: null,
+        },
+        distinct: ['consumerId'],
+        select: {
+          consumer: {
+            select: {
+              id: true,
+              name: true,
+              phoneNumber: true,
+              createdAt: true,
+            },
+          },
+        },
+      })
+      .then((orders: any[]) => orders.map((order) => order.consumer));
+  },
 };
 
 export default orderRepository;

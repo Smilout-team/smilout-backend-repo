@@ -34,4 +34,11 @@ storeScanRoutes.get(
   storeScanController.getStoreDetail
 );
 
+storeScanRoutes.get(
+  '/:storeId/consumers-in-store',
+  authMiddleware,
+  validate(storeDetailSchema),
+  storeScanController.getConsumersInStore
+);
+
 export default storeScanRoutes;
